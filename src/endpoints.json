@@ -19,6 +19,20 @@
     "scopes": ["Mail.Read"]
   },
   {
+    "pathPattern": "/me/mailFolders",
+    "method": "post",
+    "toolName": "create-mail-folder",
+    "scopes": ["Mail.ReadWrite"],
+    "llmTip": "Create a new mail folder. The request body should include 'displayName' (required) and optionally 'isHidden'. Example: {\"displayName\": \"My Folder\"}. To create a child folder, use create-mail-child-folder instead."
+  },
+  {
+    "pathPattern": "/me/mailFolders/{mailFolder-id}/childFolders",
+    "method": "post",
+    "toolName": "create-mail-child-folder",
+    "scopes": ["Mail.ReadWrite"],
+    "llmTip": "Create a new child mail folder under an existing folder. The request body should include 'displayName' (required). Example: {\"displayName\": \"Sub Folder\"}."
+  },
+  {
     "pathPattern": "/me/mailFolders/{mailFolder-id}/messages",
     "method": "get",
     "toolName": "list-mail-folder-messages",
@@ -165,6 +179,38 @@
     "method": "post",
     "toolName": "send-draft-message",
     "scopes": ["Mail.Send"]
+  },
+  {
+    "pathPattern": "/me/mailFolders/{mailFolder-id}/messageRules",
+    "method": "get",
+    "toolName": "list-mail-rules",
+    "scopes": ["MailboxSettings.Read"],
+    "llmTip": "List inbox rules (message rules) for a mail folder. To list rules for the Inbox, use mailFolder-id='inbox'. Rules automatically process incoming messages based on conditions and actions."
+  },
+  {
+    "pathPattern": "/me/mailFolders/{mailFolder-id}/messageRules/{messageRule-id}",
+    "method": "get",
+    "toolName": "get-mail-rule",
+    "scopes": ["MailboxSettings.Read"]
+  },
+  {
+    "pathPattern": "/me/mailFolders/{mailFolder-id}/messageRules",
+    "method": "post",
+    "toolName": "create-mail-rule",
+    "scopes": ["MailboxSettings.ReadWrite"],
+    "llmTip": "Create an inbox rule (message rule) for a mail folder. Use mailFolder-id='inbox' for the Inbox. The body should include displayName, sequence, conditions, and actions. Example conditions: fromAddresses, subjectContains, bodyContains, senderContains, headerContains, importance, isAutomaticForward, hasAttachments. Example actions: moveToFolder, copyToFolder, delete, forwardTo, markImportance, markAsRead, stopProcessingRules."
+  },
+  {
+    "pathPattern": "/me/mailFolders/{mailFolder-id}/messageRules/{messageRule-id}",
+    "method": "patch",
+    "toolName": "update-mail-rule",
+    "scopes": ["MailboxSettings.ReadWrite"]
+  },
+  {
+    "pathPattern": "/me/mailFolders/{mailFolder-id}/messageRules/{messageRule-id}",
+    "method": "delete",
+    "toolName": "delete-mail-rule",
+    "scopes": ["MailboxSettings.ReadWrite"]
   },
   {
     "pathPattern": "/me/events",
