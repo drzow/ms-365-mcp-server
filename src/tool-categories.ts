@@ -8,8 +8,8 @@ export interface ToolCategory {
 export const TOOL_CATEGORIES: Record<string, ToolCategory> = {
   mail: {
     name: 'mail',
-    pattern: /mail|attachment|draft/i,
-    description: 'Email operations (read, send, manage folders, attachments)',
+    pattern: /mail|attachment|draft|rule/i,
+    description: 'Email operations (read, send, manage folders, attachments, rules)',
   },
   calendar: {
     name: 'calendar',
