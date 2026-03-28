@@ -96,9 +96,10 @@ MS365_MCP_OUTPUT_FORMAT=toon npx @softeria/ms-365-mcp-server
 
 ### Personal Account Tools (Available by default)
 
-**Email (Outlook)**  
-<sub>list-mail-messages, list-mail-folders, list-mail-folder-messages, get-mail-message, send-mail,
-delete-mail-message, create-draft-email, move-mail-message</sub>
+**Email (Outlook)**
+<sub>list-mail-messages, list-mail-folders, list-mail-child-folders, list-mail-folder-messages, get-mail-message, send-mail,
+delete-mail-message, create-draft-email, move-mail-message, create-mail-folder, create-mail-child-folder,
+update-mail-folder, delete-mail-folder</sub>
 
 **Calendar**  
 <sub>list-calendars, list-calendar-events, get-calendar-event, get-calendar-view, create-calendar-event,
@@ -133,10 +134,13 @@ delete-outlook-contact</sub>
 
 ### Organization Account Tools (Requires --org-mode flag)
 
-**Teams & Chats**  
+**Teams & Chats**
 <sub>list-chats, get-chat, list-chat-messages, get-chat-message, send-chat-message, list-chat-message-replies,
 reply-to-chat-message, list-joined-teams, get-team, list-team-channels, get-team-channel, list-channel-messages,
 get-channel-message, send-channel-message, list-team-members</sub>
+
+**Online Meetings & Transcripts**
+<sub>list-online-meetings, list-meeting-transcripts, get-meeting-transcript-content</sub>
 
 **SharePoint Sites**  
 <sub>search-sharepoint-sites, get-sharepoint-site, get-sharepoint-site-by-path, list-sharepoint-site-drives,
