@@ -8,7 +8,7 @@ export interface ToolCategory {
 export const TOOL_CATEGORIES: Record<string, ToolCategory> = {
   mail: {
     name: 'mail',
-    pattern: /mail|attachment|draft|rule/i,
+    pattern: /mail|attachment|draft|rule|category|inbox/i,
     description: 'Email operations (read, send, manage folders, attachments, rules)',
   },
   calendar: {
@@ -18,19 +18,19 @@ export const TOOL_CATEGORIES: Record<string, ToolCategory> = {
   },
   files: {
     name: 'files',
-    pattern: /drive|file|upload|download|folder|item/i,
+    pattern: /drive|file|upload|download|folder|item|sharing|thumbnail|version|permission/i,
     description: 'OneDrive file and folder operations',
   },
   personal: {
     name: 'personal',
     pattern:
-      /mail|calendar|drive|contact|todo|onenote|attachment|draft|event|file|folder|search|query/i,
+      /mail|calendar|drive|contact|todo|onenote|attachment|draft|event|file|folder|search|query|category|inbox|presence|sharing|thumbnail|version|permission/i,
     description:
       'Personal productivity tools (mail, calendar, files, contacts, tasks, notes, search)',
   },
   work: {
     name: 'work',
-    pattern: /team|channel|chat|sharepoint|planner|site|list|shared|search|query/i,
+    pattern: /team|channel|chat|sharepoint|planner|site|list|shared|search|query|presence/i,
     description: 'Organization/work tools (Teams, SharePoint, shared mailboxes, search)',
     requiresOrgMode: true,
   },
@@ -64,6 +64,11 @@ export const TOOL_CATEGORIES: Record<string, ToolCategory> = {
     pattern: /user|list-users/i,
     description: 'User directory access',
     requiresOrgMode: true,
+  },
+  meetings: {
+    name: 'meetings',
+    pattern: /meeting|transcript|recording|attendance|presence/i,
+    description: 'Online meetings, transcripts, recordings, attendance, and presence',
   },
   all: {
     name: 'all',

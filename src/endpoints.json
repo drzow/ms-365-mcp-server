@@ -865,5 +865,395 @@
     "toolName": "reply-to-group-thread",
     "workScopes": ["Group.ReadWrite.All"],
     "llmTip": "Legacy — Microsoft recommends Teams channels instead of group threads."
+  },
+
+  {
+    "pathPattern": "/me/messages/{message-id}/copy",
+    "method": "post",
+    "toolName": "copy-mail-message",
+    "scopes": ["Mail.ReadWrite"],
+    "llmTip": "Copy a message to a folder. Body requires destinationId (folder ID or well-known name like inbox, drafts, sentitems, deleteditems, junkemail, archive)."
+  },
+  {
+    "pathPattern": "/me/outlook/masterCategories",
+    "method": "get",
+    "toolName": "list-outlook-categories",
+    "scopes": ["MailboxSettings.Read"]
+  },
+  {
+    "pathPattern": "/me/outlook/masterCategories",
+    "method": "post",
+    "toolName": "create-outlook-category",
+    "scopes": ["MailboxSettings.ReadWrite"],
+    "llmTip": "Create a category with displayName and color. Color must be one of: preset0 through preset24, or 'none'."
+  },
+  {
+    "pathPattern": "/me/outlook/masterCategories/{outlookCategory-id}",
+    "method": "delete",
+    "toolName": "delete-outlook-category",
+    "scopes": ["MailboxSettings.ReadWrite"]
+  },
+  {
+    "pathPattern": "/me/inferenceClassification/overrides",
+    "method": "get",
+    "toolName": "list-focused-inbox-overrides",
+    "scopes": ["Mail.Read"],
+    "llmTip": "Lists Focused Inbox overrides that always classify messages from specific senders as 'focused' or 'other'."
+  },
+  {
+    "pathPattern": "/me/inferenceClassification/overrides",
+    "method": "post",
+    "toolName": "create-focused-inbox-override",
+    "scopes": ["Mail.ReadWrite"],
+    "llmTip": "Create a Focused Inbox override. Body: {classifyAs: 'focused'|'other', senderEmailAddress: {address: 'email@example.com'}}."
+  },
+  {
+    "pathPattern": "/me/inferenceClassification/overrides/{inferenceClassificationOverride-id}",
+    "method": "delete",
+    "toolName": "delete-focused-inbox-override",
+    "scopes": ["Mail.ReadWrite"]
+  },
+  {
+    "pathPattern": "/me/mailboxSettings",
+    "method": "get",
+    "toolName": "get-mailbox-settings",
+    "scopes": ["MailboxSettings.Read"],
+    "llmTip": "Returns automaticRepliesSetting, language, timeZone, dateFormat, timeFormat, delegateMeetingMessageDeliveryOptions, and userPurpose."
+  },
+  {
+    "pathPattern": "/me/mailboxSettings",
+    "method": "patch",
+    "toolName": "update-mailbox-settings",
+    "scopes": ["MailboxSettings.ReadWrite"],
+    "llmTip": "Update mailbox settings like automatic replies (out-of-office), language, timezone, date/time format. For automatic replies: {automaticRepliesSetting: {status: 'scheduled', scheduledStartDateTime: {...}, scheduledEndDateTime: {...}, internalReplyMessage: '...', externalReplyMessage: '...'}}."
+  },
+  {
+    "pathPattern": "/me/getMailTips",
+    "method": "post",
+    "toolName": "get-mail-tips",
+    "scopes": ["Mail.Read"],
+    "llmTip": "Get mail tips for recipients (auto-replies, mailbox full, etc.). Body: {EmailAddresses: ['user@example.com'], MailTipsOptions: 'automaticReplies,mailboxFullStatus,maxMessageSize'}."
+  },
+  {
+    "pathPattern": "/me/contactFolders",
+    "method": "get",
+    "toolName": "list-contact-folders",
+    "scopes": ["Contacts.Read"]
+  },
+  {
+    "pathPattern": "/me/contactFolders",
+    "method": "post",
+    "toolName": "create-contact-folder",
+    "scopes": ["Contacts.ReadWrite"]
+  },
+  {
+    "pathPattern": "/me/contactFolders/{contactFolder-id}/contacts",
+    "method": "get",
+    "toolName": "list-contact-folder-contacts",
+    "scopes": ["Contacts.Read"]
+  },
+  {
+    "pathPattern": "/me/contactFolders/{contactFolder-id}/contacts",
+    "method": "post",
+    "toolName": "create-contact-folder-contact",
+    "scopes": ["Contacts.ReadWrite"]
+  },
+
+  {
+    "pathPattern": "/me/events/{event-id}/accept",
+    "method": "post",
+    "toolName": "accept-calendar-event",
+    "scopes": ["Calendars.ReadWrite"],
+    "llmTip": "Accept a meeting invitation. Body: {comment: 'optional message', sendResponse: true}."
+  },
+  {
+    "pathPattern": "/me/events/{event-id}/decline",
+    "method": "post",
+    "toolName": "decline-calendar-event",
+    "scopes": ["Calendars.ReadWrite"],
+    "llmTip": "Decline a meeting invitation. Body: {comment: 'optional message', sendResponse: true}."
+  },
+  {
+    "pathPattern": "/me/events/{event-id}/tentativelyAccept",
+    "method": "post",
+    "toolName": "tentatively-accept-calendar-event",
+    "scopes": ["Calendars.ReadWrite"],
+    "llmTip": "Tentatively accept a meeting invitation. Body: {comment: 'optional message', sendResponse: true}."
+  },
+  {
+    "pathPattern": "/me/calendar/getSchedule",
+    "method": "post",
+    "toolName": "get-schedule",
+    "scopes": ["Calendars.Read"],
+    "workScopes": ["Calendars.Read.Shared"],
+    "llmTip": "Get free/busy schedule for users. Body: {schedules: ['user@example.com'], startTime: {dateTime: '...', timeZone: 'UTC'}, endTime: {dateTime: '...', timeZone: 'UTC'}, availabilityViewInterval: 30}."
+  },
+  {
+    "pathPattern": "/me/events/{event-id}/instances",
+    "method": "get",
+    "toolName": "list-default-calendar-event-instances",
+    "scopes": ["Calendars.Read"],
+    "supportsTimezone": true,
+    "llmTip": "Expand a recurring event from the default calendar into individual instances. Requires startDateTime and endDateTime query parameters in ISO 8601 format."
+  },
+  {
+    "pathPattern": "/me/calendars/{calendar-id}/calendarPermissions",
+    "method": "get",
+    "toolName": "list-calendar-permissions",
+    "scopes": ["Calendars.Read"]
+  },
+  {
+    "pathPattern": "/me/calendars/{calendar-id}/calendarPermissions",
+    "method": "post",
+    "toolName": "create-calendar-permission",
+    "scopes": ["Calendars.ReadWrite"]
+  },
+  {
+    "pathPattern": "/me/calendars/{calendar-id}/calendarPermissions/{calendarPermission-id}",
+    "method": "patch",
+    "toolName": "update-calendar-permission",
+    "scopes": ["Calendars.ReadWrite"]
+  },
+  {
+    "pathPattern": "/me/calendars/{calendar-id}/calendarPermissions/{calendarPermission-id}",
+    "method": "delete",
+    "toolName": "delete-calendar-permission",
+    "scopes": ["Calendars.ReadWrite"]
+  },
+
+  {
+    "pathPattern": "/me/onlineMeetings",
+    "method": "post",
+    "toolName": "create-online-meeting",
+    "scopes": ["OnlineMeetings.ReadWrite"],
+    "llmTip": "Create an online meeting. Body: {subject: '...', startDateTime: '...', endDateTime: '...'}. Returns joinWebUrl for participants."
+  },
+  {
+    "pathPattern": "/me/onlineMeetings/{onlineMeeting-id}",
+    "method": "get",
+    "toolName": "get-online-meeting",
+    "scopes": ["OnlineMeetings.Read"]
+  },
+
+  {
+    "pathPattern": "/teams/{team-id}/channels",
+    "method": "post",
+    "toolName": "create-team-channel",
+    "workScopes": ["Channel.Create"],
+    "llmTip": "Create a channel in a team. Body: {displayName: '...', description: '...', membershipType: 'standard'|'private'|'shared'}."
+  },
+  {
+    "pathPattern": "/teams/{team-id}/channels/{channel-id}",
+    "method": "patch",
+    "toolName": "update-team-channel",
+    "workScopes": ["Channel.ReadBasic.All"],
+    "llmTip": "Update channel displayName or description."
+  },
+  {
+    "pathPattern": "/teams/{team-id}/channels/{channel-id}",
+    "method": "delete",
+    "toolName": "delete-team-channel",
+    "workScopes": ["Channel.Delete.All"]
+  },
+  {
+    "pathPattern": "/teams/{team-id}/channels/{channel-id}/members",
+    "method": "get",
+    "toolName": "list-channel-members",
+    "workScopes": ["ChannelMember.Read.All"]
+  },
+  {
+    "pathPattern": "/teams/{team-id}/channels/{channel-id}/members",
+    "method": "post",
+    "toolName": "add-channel-member",
+    "workScopes": ["ChannelMember.ReadWrite.All"],
+    "llmTip": "Add a member to a channel. Body: {@odata.type: '#microsoft.graph.aadUserConversationMember', roles: ['owner'|'member'], 'user@odata.bind': 'https://graph.microsoft.com/v1.0/users/{user-id}'}."
+  },
+  {
+    "pathPattern": "/teams/{team-id}/channels/{channel-id}/filesFolder",
+    "method": "get",
+    "toolName": "get-channel-files-folder",
+    "workScopes": ["Files.Read.All"],
+    "llmTip": "Get the SharePoint folder (driveItem) that stores files for this channel. Returns drive-id and driveItem-id usable with OneDrive file endpoints."
+  },
+  {
+    "pathPattern": "/teams/{team-id}/channels/{channel-id}/tabs",
+    "method": "get",
+    "toolName": "list-channel-tabs",
+    "workScopes": ["TeamsTab.Read.All"]
+  },
+  {
+    "pathPattern": "/teams/{team-id}/primaryChannel",
+    "method": "get",
+    "toolName": "get-team-primary-channel",
+    "workScopes": ["Channel.ReadBasic.All"],
+    "llmTip": "Get the General channel of a team without needing to list all channels first."
+  },
+  {
+    "pathPattern": "/me/presence",
+    "method": "get",
+    "toolName": "get-my-presence",
+    "scopes": ["Presence.Read"],
+    "llmTip": "Get current user's presence status (availability and activity). Returns availability: Available, AvailableIdle, Away, BeRightBack, Busy, BusyIdle, DoNotDisturb, Offline, PresenceUnknown."
+  },
+  {
+    "pathPattern": "/communications/getPresencesByUserId",
+    "method": "post",
+    "toolName": "get-presences-by-user-id",
+    "workScopes": ["Presence.Read.All"],
+    "llmTip": "Get presence for multiple users at once. Body: {ids: ['user-id-1', 'user-id-2']}. Max 650 IDs per request."
+  },
+  {
+    "pathPattern": "/teams/{team-id}/archive",
+    "method": "post",
+    "toolName": "archive-team",
+    "workScopes": ["TeamSettings.ReadWrite.All"],
+    "llmTip": "Archive a team. Optionally set shouldSetSpoSiteReadOnlyForMembers to make the SharePoint site read-only."
+  },
+  {
+    "pathPattern": "/teams/{team-id}/unarchive",
+    "method": "post",
+    "toolName": "unarchive-team",
+    "workScopes": ["TeamSettings.ReadWrite.All"]
+  },
+  {
+    "pathPattern": "/chats",
+    "method": "post",
+    "toolName": "create-chat",
+    "workScopes": ["Chat.Create"],
+    "llmTip": "Create a new chat. Body: {chatType: 'oneOnOne'|'group', members: [{@odata.type: '#microsoft.graph.aadUserConversationMember', roles: ['owner'], 'user@odata.bind': 'https://graph.microsoft.com/v1.0/users/{user-id}'}]}."
+  },
+  {
+    "pathPattern": "/chats/{chat-id}/members",
+    "method": "get",
+    "toolName": "list-chat-members",
+    "workScopes": ["ChatMember.Read"]
+  },
+
+  {
+    "pathPattern": "/me/drive",
+    "method": "get",
+    "toolName": "get-my-drive",
+    "scopes": ["Files.Read"],
+    "llmTip": "Get the current user's default OneDrive. Returns the drive-id needed for other file operations."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/children",
+    "method": "post",
+    "toolName": "create-folder",
+    "scopes": ["Files.ReadWrite"],
+    "llmTip": "Create a folder. Body: {name: 'New Folder', folder: {}, '@microsoft.graph.conflictBehavior': 'rename'|'fail'|'replace'}."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/search(q='{q}')",
+    "method": "get",
+    "toolName": "search-drive-items",
+    "scopes": ["Files.Read"],
+    "skipEncoding": ["q"],
+    "llmTip": "Search for files and folders by name or content across the entire drive. The q parameter is the search query."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/copy",
+    "method": "post",
+    "toolName": "copy-drive-item",
+    "scopes": ["Files.ReadWrite"],
+    "llmTip": "Copy a file or folder. Body: {parentReference: {driveId: '...', id: '...'}, name: 'new-name'}. Returns 202 Accepted with a Location header to monitor the async operation."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}",
+    "method": "patch",
+    "toolName": "update-drive-item",
+    "scopes": ["Files.ReadWrite"],
+    "llmTip": "Update file/folder metadata. Use to rename: {name: 'new-name'} or move: {parentReference: {id: 'target-folder-id'}}."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/createLink",
+    "method": "post",
+    "toolName": "create-sharing-link",
+    "scopes": ["Files.ReadWrite"],
+    "llmTip": "Create a sharing link. Body: {type: 'view'|'edit'|'embed', scope: 'anonymous'|'organization'}."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/invite",
+    "method": "post",
+    "toolName": "invite-to-drive-item",
+    "scopes": ["Files.ReadWrite"],
+    "llmTip": "Share a file/folder with specific people. Body: {recipients: [{email: 'user@example.com'}], roles: ['read'|'write'], requireSignIn: true, sendInvitation: true, message: 'optional message'}."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/permissions",
+    "method": "get",
+    "toolName": "list-drive-item-permissions",
+    "scopes": ["Files.Read"]
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/permissions/{permission-id}",
+    "method": "delete",
+    "toolName": "delete-drive-item-permission",
+    "scopes": ["Files.ReadWrite"]
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/versions",
+    "method": "get",
+    "toolName": "list-drive-item-versions",
+    "scopes": ["Files.Read"]
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/thumbnails",
+    "method": "get",
+    "toolName": "list-drive-item-thumbnails",
+    "scopes": ["Files.Read"]
+  },
+
+  {
+    "pathPattern": "/sites/{site-id}/lists/{list-id}/columns",
+    "method": "get",
+    "toolName": "list-sharepoint-list-columns",
+    "workScopes": ["Sites.Read.All"],
+    "llmTip": "List columns (fields) defined on a SharePoint list. Useful to discover field names before creating or updating list items."
+  },
+  {
+    "pathPattern": "/sites/{site-id}/lists/{list-id}/items",
+    "method": "post",
+    "toolName": "create-sharepoint-list-item",
+    "workScopes": ["Sites.ReadWrite.All"],
+    "llmTip": "Create a list item. Body: {fields: {Title: '...', FieldName: 'value'}}. Use list-sharepoint-list-columns to discover available field names."
+  },
+  {
+    "pathPattern": "/sites/{site-id}/lists/{list-id}/items/{listItem-id}",
+    "method": "patch",
+    "toolName": "update-sharepoint-list-item",
+    "workScopes": ["Sites.ReadWrite.All"]
+  },
+  {
+    "pathPattern": "/sites/{site-id}/lists/{list-id}/items/{listItem-id}",
+    "method": "delete",
+    "toolName": "delete-sharepoint-list-item",
+    "workScopes": ["Sites.ReadWrite.All"]
+  },
+  {
+    "pathPattern": "/sites/{site-id}/lists",
+    "method": "post",
+    "toolName": "create-sharepoint-list",
+    "workScopes": ["Sites.ReadWrite.All"],
+    "llmTip": "Create a new SharePoint list. Body: {displayName: '...', list: {template: 'genericList'}}."
+  },
+  {
+    "pathPattern": "/me/followedSites",
+    "method": "get",
+    "toolName": "list-followed-sites",
+    "workScopes": ["Sites.Read.All"]
+  },
+  {
+    "pathPattern": "/sites/{site-id}/sites",
+    "method": "get",
+    "toolName": "list-sharepoint-subsites",
+    "workScopes": ["Sites.Read.All"]
+  },
+  {
+    "pathPattern": "/sites/{site-id}/lists/{list-id}/items/{listItem-id}/fields",
+    "method": "patch",
+    "toolName": "update-sharepoint-list-item-fields",
+    "workScopes": ["Sites.ReadWrite.All"],
+    "llmTip": "Update specific fields on a list item without replacing the entire item. Body: {FieldName: 'new value'}. Use list-sharepoint-list-columns to discover field names."
   }
 ]
