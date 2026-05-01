@@ -467,6 +467,20 @@
     "llmTip": "Body must be a full HTML document (with <html><head><title>...</title></head><body>...</body></html>). Partial HTML fails silently."
   },
   {
+    "pathPattern": "/me/onenote/notebooks/{notebook-id}/sections",
+    "method": "post",
+    "toolName": "create-onenote-section",
+    "scopes": ["Notes.Create"],
+    "llmTip": "Creates a section directly under a notebook. Use create-onenote-section-in-group when the parent is a section group instead of a notebook. Use list-onenote-notebooks to find the notebook-id. Body must be {\"displayName\": \"Section Name\"}."
+  },
+  {
+    "pathPattern": "/me/onenote/sectionGroups/{sectionGroup-id}/sections",
+    "method": "post",
+    "toolName": "create-onenote-section-in-group",
+    "scopes": ["Notes.Create"],
+    "llmTip": "Creates a section inside a section group (a section group is a folder-like container that holds sections within a notebook). Use create-onenote-section when the parent is a notebook directly. Body must be {\"displayName\": \"Section Name\"}."
+  },
+  {
     "pathPattern": "/me/todo/lists",
     "method": "get",
     "toolName": "list-todo-task-lists",

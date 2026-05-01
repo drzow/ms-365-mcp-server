@@ -407,7 +407,242 @@ describe('graph-tools', () => {
     });
   });
 
-  // ---- 6. supportsTimezone ----
+  // ---- 6. create-onenote-section (POST body, JSON) ----
+  describe('create-onenote-section', () => {
+    it('should POST to /me/onenote/notebooks/{notebook-id}/sections with JSON displayName body', async () => {
+      const endpoint = makeEndpoint({
+        alias: 'create-onenote-section',
+        method: 'post',
+        path: '/me/onenote/notebooks/:notebookId/sections',
+        parameters: [
+          { name: 'notebookId', type: 'Path', schema: z.string() },
+          {
+            name: 'body',
+            type: 'Body',
+            schema: z.object({ displayName: z.string() }),
+          },
+        ],
+      });
+      const config = makeConfig({
+        toolName: 'create-onenote-section',
+        pathPattern: '/me/onenote/notebooks/{notebook-id}/sections',
+        method: 'post',
+        scopes: ['Notes.Create'],
+      });
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const graphClient = createMockGraphClient([
+        {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ id: 'sec-1', displayName: 'Q2 Planning' }),
+            },
+          ],
+        },
+      ]);
+
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, graphClient as any);
+
+      const tool = server.tools.get('create-onenote-section');
+      expect(tool).toBeDefined();
+
+      await tool!.handler({ notebookId: 'nb-abc', body: { displayName: 'Q2 Planning' } });
+
+      expect(graphClient.graphRequest).toHaveBeenCalledTimes(1);
+      const [requestedPath, options] = graphClient.graphRequest.mock.calls[0];
+      expect(requestedPath).toContain('/me/onenote/notebooks/nb-abc/sections');
+      expect(requestedPath).not.toContain(':notebookId');
+      expect(requestedPath).not.toContain('{notebook-id}');
+      expect(options.method).toBe('POST');
+      expect(options.body).toBe('{"displayName":"Q2 Planning"}');
+      // Default JSON content type — not text/html
+      expect(options.headers['Content-Type']).not.toBe('text/html');
+    });
+
+    it('should accept kebab-case notebook-id path param', async () => {
+      const endpoint = makeEndpoint({
+        alias: 'create-onenote-section',
+        method: 'post',
+        path: '/me/onenote/notebooks/:notebookId/sections',
+        parameters: [
+          { name: 'notebookId', type: 'Path', schema: z.string() },
+          {
+            name: 'body',
+            type: 'Body',
+            schema: z.object({ displayName: z.string() }),
+          },
+        ],
+      });
+      const config = makeConfig({
+        toolName: 'create-onenote-section',
+        pathPattern: '/me/onenote/notebooks/{notebook-id}/sections',
+        method: 'post',
+        scopes: ['Notes.Create'],
+      });
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const graphClient = createMockGraphClient([
+        { content: [{ type: 'text', text: JSON.stringify({ id: 'sec-2' }) }] },
+      ]);
+
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, graphClient as any);
+
+      const tool = server.tools.get('create-onenote-section');
+      // LLM may pass kebab-case 'notebook-id' (matching endpoints.json placeholder)
+      // even though the generated client schema uses camelCase 'notebookId'
+      await tool!.handler({ 'notebook-id': 'nb-xyz', body: { displayName: 'Sprint Notes' } });
+
+      const [requestedPath, options] = graphClient.graphRequest.mock.calls[0];
+      expect(requestedPath).toContain('/me/onenote/notebooks/nb-xyz/sections');
+      expect(requestedPath).not.toContain(':notebookId');
+      expect(options.method).toBe('POST');
+      expect(options.body).toBe('{"displayName":"Sprint Notes"}');
+    });
+
+    it('should auto-wrap unwrapped displayName via body schema parse fallback', async () => {
+      // Per spec: "Verify with the unit test that passing { displayName: 'X' } directly
+      // (without a `body` wrapper) works — this is the common case from LLMs."
+      // Path: when params has { body: { displayName: 'X' } }, paramValue = { displayName: 'X' }
+      // and the schema z.object({ displayName: z.string() }) parses it directly.
+      const endpoint = makeEndpoint({
+        alias: 'create-onenote-section',
+        method: 'post',
+        path: '/me/onenote/notebooks/:notebookId/sections',
+        parameters: [
+          { name: 'notebookId', type: 'Path', schema: z.string() },
+          {
+            name: 'body',
+            type: 'Body',
+            schema: z.object({ displayName: z.string() }),
+          },
+        ],
+      });
+      const config = makeConfig({
+        toolName: 'create-onenote-section',
+        pathPattern: '/me/onenote/notebooks/{notebook-id}/sections',
+        method: 'post',
+        scopes: ['Notes.Create'],
+      });
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const graphClient = createMockGraphClient([
+        { content: [{ type: 'text', text: JSON.stringify({ id: 'sec-w' }) }] },
+      ]);
+
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, graphClient as any);
+
+      const tool = server.tools.get('create-onenote-section');
+      // Common LLM case: { body: { displayName: 'X' } } — schema parses paramValue directly.
+      await tool!.handler({ notebookId: 'nb-w', body: { displayName: 'Wrapped Body' } });
+
+      const [, options] = graphClient.graphRequest.mock.calls[0];
+      expect(options.body).toBe('{"displayName":"Wrapped Body"}');
+    });
+  });
+
+  describe('create-onenote-section-in-group', () => {
+    it('should POST to /me/onenote/sectionGroups/{sectionGroup-id}/sections with JSON body', async () => {
+      const endpoint = makeEndpoint({
+        alias: 'create-onenote-section-in-group',
+        method: 'post',
+        path: '/me/onenote/sectionGroups/:sectionGroupId/sections',
+        parameters: [
+          { name: 'sectionGroupId', type: 'Path', schema: z.string() },
+          {
+            name: 'body',
+            type: 'Body',
+            schema: z.object({ displayName: z.string() }),
+          },
+        ],
+      });
+      const config = makeConfig({
+        toolName: 'create-onenote-section-in-group',
+        pathPattern: '/me/onenote/sectionGroups/{sectionGroup-id}/sections',
+        method: 'post',
+        scopes: ['Notes.Create'],
+      });
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const graphClient = createMockGraphClient([
+        { content: [{ type: 'text', text: JSON.stringify({ id: 'sec-3' }) }] },
+      ]);
+
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, graphClient as any);
+
+      const tool = server.tools.get('create-onenote-section-in-group');
+      expect(tool).toBeDefined();
+
+      await tool!.handler({
+        sectionGroupId: 'sg-123',
+        body: { displayName: 'Subsection' },
+      });
+
+      const [requestedPath, options] = graphClient.graphRequest.mock.calls[0];
+      expect(requestedPath).toContain('/me/onenote/sectionGroups/sg-123/sections');
+      expect(requestedPath).not.toContain(':sectionGroupId');
+      expect(requestedPath).not.toContain('{sectionGroup-id}');
+      expect(options.method).toBe('POST');
+      expect(options.body).toBe('{"displayName":"Subsection"}');
+      expect(options.headers['Content-Type']).not.toBe('text/html');
+    });
+
+    it('should accept kebab-case sectionGroup-id path param', async () => {
+      const endpoint = makeEndpoint({
+        alias: 'create-onenote-section-in-group',
+        method: 'post',
+        path: '/me/onenote/sectionGroups/:sectionGroupId/sections',
+        parameters: [
+          { name: 'sectionGroupId', type: 'Path', schema: z.string() },
+          {
+            name: 'body',
+            type: 'Body',
+            schema: z.object({ displayName: z.string() }),
+          },
+        ],
+      });
+      const config = makeConfig({
+        toolName: 'create-onenote-section-in-group',
+        pathPattern: '/me/onenote/sectionGroups/{sectionGroup-id}/sections',
+        method: 'post',
+        scopes: ['Notes.Create'],
+      });
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const graphClient = createMockGraphClient([
+        { content: [{ type: 'text', text: JSON.stringify({ id: 'sec-4' }) }] },
+      ]);
+
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, graphClient as any);
+
+      const tool = server.tools.get('create-onenote-section-in-group');
+      await tool!.handler({
+        'sectionGroup-id': 'sg-kebab',
+        body: { displayName: 'Kebab Section' },
+      });
+
+      const [requestedPath] = graphClient.graphRequest.mock.calls[0];
+      expect(requestedPath).toContain('/me/onenote/sectionGroups/sg-kebab/sections');
+      expect(requestedPath).not.toContain(':sectionGroupId');
+    });
+  });
+
+  // ---- 7. supportsTimezone ----
   describe('supportsTimezone', () => {
     it('should set Prefer: outlook.timezone header when timezone param provided', async () => {
       const endpoint = makeEndpoint({
