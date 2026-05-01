@@ -506,11 +506,11 @@ describe('graph-tools', () => {
       expect(options.body).toBe('{"displayName":"Sprint Notes"}');
     });
 
-    it('should auto-wrap unwrapped displayName via body schema parse fallback', async () => {
-      // Per spec: "Verify with the unit test that passing { displayName: 'X' } directly
-      // (without a `body` wrapper) works — this is the common case from LLMs."
-      // Path: when params has { body: { displayName: 'X' } }, paramValue = { displayName: 'X' }
-      // and the schema z.object({ displayName: z.string() }) parses it directly.
+    it('should accept wrapped { body: { displayName } } and pass schema parse on first try', async () => {
+      // The wrapped form { body: { displayName: 'X' } } parses against the body schema
+      // directly — no auto-wrap branch needed. The genuine wrap-branch coverage lives in
+      // the edge case test "should exercise the auto-wrap branch when body parse fails as-is
+      // but succeeds when wrapped".
       const endpoint = makeEndpoint({
         alias: 'create-onenote-section',
         method: 'post',
