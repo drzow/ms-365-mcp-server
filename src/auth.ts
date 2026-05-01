@@ -137,6 +137,7 @@ const SCOPE_HIERARCHY: ScopeHierarchy = {
   'Tasks.ReadWrite': ['Tasks.Read'],
   'Contacts.ReadWrite': ['Contacts.Read'],
   'MailboxSettings.ReadWrite': ['MailboxSettings.Read'],
+  'User.ReadWrite.All': ['User.Read.All'],
 };
 
 function buildScopesFromEndpoints(

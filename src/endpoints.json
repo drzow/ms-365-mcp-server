@@ -1255,5 +1255,26 @@
     "toolName": "update-sharepoint-list-item-fields",
     "workScopes": ["Sites.ReadWrite.All"],
     "llmTip": "Update specific fields on a list item without replacing the entire item. Body: {FieldName: 'new value'}. Use list-sharepoint-list-columns to discover field names."
+  },
+  {
+    "pathPattern": "/users/{user-id}",
+    "method": "patch",
+    "toolName": "update-user",
+    "workScopes": ["User.ReadWrite.All"],
+    "llmTip": "Update user properties. To disable sign-in: {accountEnabled: false}. To update display name: {displayName: 'New Name'}. Requires User.ReadWrite.All scope and admin consent."
+  },
+  {
+    "pathPattern": "/users/{user-id}/revokeSignInSessions",
+    "method": "post",
+    "toolName": "revoke-user-sign-in-sessions",
+    "workScopes": ["User.ReadWrite.All"],
+    "llmTip": "Revoke all sign-in sessions for a user. Forces re-authentication on all devices. No request body needed."
+  },
+  {
+    "pathPattern": "/users/{user-id}/assignLicense",
+    "method": "post",
+    "toolName": "assign-user-license",
+    "workScopes": ["User.ReadWrite.All"],
+    "llmTip": "Add or remove licenses. Body: {addLicenses: [], removeLicenses: [{skuId: 'sku-guid'}]}. To remove all licenses, first GET /users/{id}?$select=assignedLicenses to get current SKU IDs, then pass them all in removeLicenses."
   }
 ]
