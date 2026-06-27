@@ -110,7 +110,11 @@ update-calendar-event, delete-calendar-event</sub>
 upload-new-file, delete-onedrive-file</sub>
 
 **Excel Operations**  
-<sub>list-excel-worksheets, get-excel-range, create-excel-chart, format-excel-range, sort-excel-range</sub>
+<sub>list-excel-worksheets, get-excel-range, get-excel-used-range, set-excel-range, clear-excel-range, insert-excel-range, delete-excel-range, merge-excel-range, unmerge-excel-range, format-excel-range, format-excel-range-font, format-excel-range-fill, sort-excel-range, create-excel-chart, add-excel-worksheet, update-excel-worksheet, delete-excel-worksheet, add-excel-table, add-excel-table-row, add-excel-table-column, update-excel-table, delete-excel-table, create-excel-session, close-excel-session, refresh-excel-session</sub>
+
+> **Fine-grained Excel editing.** `set-excel-range` writes cell values, formulas, and number formats to an A1-style range; `format-excel-range`/`-font`/`-fill` control alignment, font, and fill. For a batch of edits, call `create-excel-session` (with `persistChanges: true`), pass the returned id as `workbookSessionId` on each subsequent Excel tool, then `close-excel-session` — this is faster and keeps the edits consistent.
+>
+> _Note: Microsoft Graph offers no equivalent fine-grained editing API for Word/`.docx` files — only whole-file operations — so Word editing is not provided._
 
 **OneNote**  
 <sub>list-onenote-notebooks, list-onenote-notebook-sections, list-onenote-section-pages, get-onenote-page-content,
