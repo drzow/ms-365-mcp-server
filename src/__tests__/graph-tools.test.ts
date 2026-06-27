@@ -926,4 +926,118 @@ describe('graph-tools', () => {
       expect(tool!.schema['timezone']).toBeUndefined();
     });
   });
+
+  // ---- 8. isExcelOp workbook session header ----
+  describe('isExcelOp workbook session header', () => {
+    it('exposes a workbookSessionId param when isExcelOp is true', async () => {
+      const endpoint = makeEndpoint({
+        alias: 'set-excel-range',
+        method: 'patch',
+        path: "/drives/:driveId/items/:driveItemId/workbook/worksheets/:workbookWorksheetId/range(address=':address')",
+        parameters: [
+          { name: 'body', type: 'Body', schema: z.object({ values: z.any() }).passthrough() },
+        ],
+      });
+      const config = makeConfig({
+        toolName: 'set-excel-range',
+        method: 'patch',
+        pathPattern:
+          "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')",
+        scopes: ['Files.ReadWrite'],
+        isExcelOp: true,
+        skipEncoding: ['address'],
+      });
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, createMockGraphClient() as any);
+
+      const tool = server.tools.get('set-excel-range');
+      expect(tool).toBeDefined();
+      expect(tool!.schema['workbookSessionId']).toBeDefined();
+      expect(tool!.schema['workbookSessionId'].description).toContain('workbook-session-id');
+    });
+
+    it('does NOT add workbookSessionId when isExcelOp is absent', async () => {
+      const endpoint = makeEndpoint();
+      const config = makeConfig(); // no isExcelOp
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, createMockGraphClient() as any);
+
+      const tool = server.tools.get('test-tool');
+      expect(tool!.schema['workbookSessionId']).toBeUndefined();
+    });
+
+    it('sets the workbook-session-id header when workbookSessionId is passed', async () => {
+      const endpoint = makeEndpoint({
+        alias: 'set-excel-range',
+        method: 'patch',
+        path: '/drives/:driveId/items/:driveItemId/workbook',
+        parameters: [
+          { name: 'body', type: 'Body', schema: z.object({ values: z.any() }).passthrough() },
+        ],
+      });
+      const config = makeConfig({
+        toolName: 'set-excel-range',
+        method: 'patch',
+        pathPattern: '/drives/{drive-id}/items/{driveItem-id}/workbook',
+        scopes: ['Files.ReadWrite'],
+        isExcelOp: true,
+      });
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const graphClient = createMockGraphClient([
+        { content: [{ type: 'text', text: JSON.stringify({ ok: true }) }] },
+      ]);
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, graphClient as any);
+
+      const tool = server.tools.get('set-excel-range');
+      await tool!.handler({ body: { values: [[1]] }, workbookSessionId: 'SESSION-123' });
+
+      const [, options] = graphClient.graphRequest.mock.calls[0];
+      expect(options.headers['workbook-session-id']).toBe('SESSION-123');
+    });
+
+    it('omits the workbook-session-id header when no session id is passed', async () => {
+      const endpoint = makeEndpoint({
+        alias: 'set-excel-range',
+        method: 'patch',
+        path: '/drives/:driveId/items/:driveItemId/workbook',
+        parameters: [
+          { name: 'body', type: 'Body', schema: z.object({ values: z.any() }).passthrough() },
+        ],
+      });
+      const config = makeConfig({
+        toolName: 'set-excel-range',
+        method: 'patch',
+        pathPattern: '/drives/{drive-id}/items/{driveItem-id}/workbook',
+        scopes: ['Files.ReadWrite'],
+        isExcelOp: true,
+      });
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const graphClient = createMockGraphClient([
+        { content: [{ type: 'text', text: JSON.stringify({ ok: true }) }] },
+      ]);
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, graphClient as any);
+
+      const tool = server.tools.get('set-excel-range');
+      await tool!.handler({ body: { values: [[1]] } });
+
+      const [, options] = graphClient.graphRequest.mock.calls[0];
+      expect(options.headers['workbook-session-id']).toBeUndefined();
+    });
+  });
 });

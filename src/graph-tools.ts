@@ -27,6 +27,7 @@ interface EndpointConfig {
   skipEncoding?: string[]; // Parameter names that should NOT be URL-encoded (for function-style API calls)
   contentType?: string;
   acceptType?: string; // Custom Accept header for endpoints returning non-JSON content (e.g., text/vtt)
+  isExcelOp?: boolean; // Excel workbook op — inject optional workbookSessionId param → workbook-session-id header
 }
 
 const endpointsData = JSON.parse(
@@ -134,6 +135,7 @@ async function executeGraphTool(
           'excludeResponse',
           'timezone',
           'expandExtendedProperties',
+          'workbookSessionId',
         ].includes(paramName)
       ) {
         continue;
@@ -282,6 +284,11 @@ async function executeGraphTool(
     if (config?.acceptType) {
       headers['Accept'] = config.acceptType;
       logger.info(`Setting custom Accept: ${config.acceptType}`);
+    }
+
+    if (config?.isExcelOp && params.workbookSessionId) {
+      headers['workbook-session-id'] = String(params.workbookSessionId);
+      logger.info('Setting workbook-session-id header for Excel operation');
     }
 
     if (Object.keys(queryParams).length > 0) {
@@ -601,6 +608,18 @@ export function registerGraphTools(
       .boolean()
       .describe('Exclude the full response body and only return success or failure indication')
       .optional();
+
+    // Excel workbook session support (endpoints flagged isExcelOp in endpoints.json).
+    // Lets a batch of edits share one persistent workbook session for speed + consistency.
+    if (endpointConfig?.isExcelOp) {
+      paramSchema['workbookSessionId'] = z
+        .string()
+        .describe(
+          'Optional Excel workbook session ID from create-excel-session, sent as the ' +
+            'workbook-session-id header so a batch of edits shares one fast, consistent session.'
+        )
+        .optional();
+    }
 
     // Add timezone parameter for calendar endpoints that support it
     if (endpointConfig?.supportsTimezone) {
