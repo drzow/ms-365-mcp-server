@@ -1,5 +1,6 @@
 import fs from 'fs';
 import yaml from 'js-yaml';
+import { augmentExcelPaths } from './excel-augmentations.mjs';
 
 export function createAndSaveSimplifiedOpenAPI(endpointsFile, openapiFile, openapiTrimmedFile) {
   const allEndpoints = JSON.parse(fs.readFileSync(endpointsFile, 'utf8'));
@@ -7,6 +8,10 @@ export function createAndSaveSimplifiedOpenAPI(endpointsFile, openapiFile, opena
 
   const spec = fs.readFileSync(openapiFile, 'utf8');
   const openApiSpec = yaml.load(spec);
+
+  // Inject Excel write operations missing from Microsoft's metadata so the
+  // endpoints.json entries below resolve against real path items.
+  augmentExcelPaths(openApiSpec);
 
   for (const endpoint of endpoints) {
     if (!openApiSpec.paths[endpoint.pathPattern]) {
