@@ -60,8 +60,10 @@ describe('augmentExcelPaths', () => {
     expect(
       Object.keys(font.patch.requestBody.content['application/json'].schema.properties).sort()
     ).toEqual(['bold', 'color', 'italic', 'name', 'size', 'underline']);
-    // sort requires fields
-    expect(sort.post.requestBody.content['application/json'].schema.required).toContain('fields');
+    // sort requires fields, and each field requires key (Graph rejects a keyless field)
+    const sortSchema = sort.post.requestBody.content['application/json'].schema;
+    expect(sortSchema.required).toContain('fields');
+    expect(sortSchema.properties.fields.items.required).toContain('key');
   });
 
   it('throws if the base range path is missing', () => {

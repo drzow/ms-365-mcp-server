@@ -1157,4 +1157,94 @@ describe('graph-tools', () => {
       expect(server.tools.has('set-excel-range')).toBe(false);
     });
   });
+
+  // ---- 10. Excel address & session-id hardening ----
+  describe('excel address & session-id hardening', () => {
+    function addressedEndpoint() {
+      const endpoint = makeEndpoint({
+        alias: 'set-excel-range',
+        method: 'patch',
+        path: "/drives/:driveId/items/:driveItemId/workbook/worksheets/:workbookWorksheetId/range(address=':address')",
+        parameters: [
+          { name: 'driveId', type: 'Path', schema: z.string() },
+          { name: 'driveItemId', type: 'Path', schema: z.string() },
+          { name: 'workbookWorksheetId', type: 'Path', schema: z.string() },
+          { name: 'address', type: 'Path', schema: z.string() },
+          { name: 'body', type: 'Body', schema: z.object({ values: z.any() }).passthrough() },
+        ],
+      });
+      const config = makeConfig({
+        toolName: 'set-excel-range',
+        method: 'patch',
+        pathPattern:
+          "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')",
+        scopes: ['Files.ReadWrite'],
+        isExcelOp: true,
+        skipEncoding: ['address'],
+      });
+      return { endpoint, config };
+    }
+
+    it('constrains the address schema to A1-style references', async () => {
+      const { endpoint, config } = addressedEndpoint();
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, createMockGraphClient() as any);
+
+      const addr = server.tools.get('set-excel-range')!.schema['address'];
+      expect(addr.safeParse('A1:B2').success).toBe(true);
+      expect(addr.safeParse('$A$1:$C$10').success).toBe(true);
+      expect(addr.safeParse('Sheet1!A1:C10').success).toBe(true);
+      expect(addr.safeParse("'My Sheet'!A1").success).toBe(true);
+      // injection attempts rejected
+      expect(addr.safeParse("A1')/worksheets").success).toBe(false);
+      expect(addr.safeParse('A1:B2?$expand=x').success).toBe(false);
+      expect(addr.safeParse('A1/B2').success).toBe(false);
+    });
+
+    it('rejects a malformed address at runtime (covers the execute-tool path) without calling Graph', async () => {
+      const { endpoint, config } = addressedEndpoint();
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const graphClient = createMockGraphClient([
+        { content: [{ type: 'text', text: JSON.stringify({ ok: true }) }] },
+      ]);
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, graphClient as any);
+
+      const tool = server.tools.get('set-excel-range');
+      const result = await tool!.handler({
+        driveId: 'd1',
+        driveItemId: 'item1',
+        workbookWorksheetId: 'ws1',
+        address: "A1')/drives/other",
+        body: { values: [[1]] },
+      });
+
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain('Invalid Excel range address');
+      expect(graphClient.graphRequest).not.toHaveBeenCalled();
+    });
+
+    it('constrains the workbookSessionId schema to URL-safe token characters', async () => {
+      const { endpoint, config } = addressedEndpoint();
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, createMockGraphClient() as any);
+
+      const sid = server.tools.get('set-excel-range')!.schema['workbookSessionId'];
+      expect(sid.safeParse('abc123+DEF/ghi==').success).toBe(true);
+      expect(sid.safeParse('cluster01.session-abc_DEF').success).toBe(true);
+      expect(sid.safeParse('bad id with spaces').success).toBe(false);
+      expect(sid.safeParse('inject\r\nX-Evil: 1').success).toBe(false);
+    });
+  });
 });

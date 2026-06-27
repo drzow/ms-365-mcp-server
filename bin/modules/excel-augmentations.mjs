@@ -101,6 +101,9 @@ export function augmentExcelPaths(openApiSpec) {
             type: 'array',
             items: {
               type: 'object',
+              // key (0-based column index within the range) is required by the Graph
+              // range/sort/apply action — a field without it is rejected server-side.
+              required: ['key'],
               properties: {
                 key: { type: 'integer' },
                 ascending: { type: 'boolean' },

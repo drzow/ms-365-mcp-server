@@ -30,6 +30,25 @@ interface EndpointConfig {
   isExcelOp?: boolean; // Excel workbook op — inject optional workbookSessionId param → workbook-session-id header
 }
 
+// Excel range addresses are sent UN-encoded (skipEncoding) into the Graph URL inside
+// range(address='…'), so we constrain them to genuine A1-style references. This blocks an
+// LLM-supplied address from injecting extra path segments or query params (e.g. '/', '?', '#',
+// or a stray quote that breaks out of the OData string literal) into a write request.
+// Allowed: A1, A1:B2, $A$1:$C$10, A:A, 1:1, Sheet1!A1:B2, and 'Quoted Sheet'!A1:B2.
+const EXCEL_A1 =
+  String.raw`(?:\$?[A-Za-z]{1,3}\$?\d+(?::\$?[A-Za-z]{1,3}\$?\d+)?` +
+  String.raw`|\$?[A-Za-z]{1,3}:\$?[A-Za-z]{1,3}|\d+:\d+)`;
+const EXCEL_SHEET = String.raw`(?:'[^'/?#\\]+'|[A-Za-z0-9_.]+)!`;
+const EXCEL_ADDRESS_REGEX = new RegExp(`^(?:${EXCEL_SHEET})?${EXCEL_A1}$`);
+
+const EXCEL_ADDRESS_HINT =
+  'A1-style range like "A1", "A1:B2", "$A$1:$C$10", "A:A", or "Sheet1!A1:B2" ' +
+  "(quoted sheet names allowed: 'My Sheet'!A1).";
+
+// Workbook session IDs from Graph are opaque, URL-safe-ish tokens. Constrain to block any
+// header-injection or path-shaping characters in the workbook-session-id header value.
+const WORKBOOK_SESSION_ID_REGEX = /^[A-Za-z0-9+/=._-]+$/;
+
 const endpointsData = JSON.parse(
   readFileSync(path.join(__dirname, 'endpoints.json'), 'utf8')
 ) as EndpointConfig[];
@@ -175,6 +194,26 @@ async function executeGraphTool(
       if (paramDef) {
         switch (paramDef.type) {
           case 'Path': {
+            // Defense-in-depth for Excel range addresses (also covers the discovery
+            // execute-tool path, which bypasses the per-tool zod schema). Reject anything
+            // that is not a real A1 reference before it reaches the un-encoded URL.
+            if (
+              config?.isExcelOp &&
+              (paramName === 'address' || camelCaseParamName === 'address') &&
+              !EXCEL_ADDRESS_REGEX.test(paramValue as string)
+            ) {
+              return {
+                content: [
+                  {
+                    type: 'text',
+                    text: JSON.stringify({
+                      error: `Invalid Excel range address: ${JSON.stringify(paramValue)}. Use ${EXCEL_ADDRESS_HINT}`,
+                    }),
+                  },
+                ],
+                isError: true,
+              };
+            }
             // Check if this parameter should skip URL encoding (for function-style API calls)
             const shouldSkipEncoding = config?.skipEncoding?.includes(paramName) ?? false;
             // Use encodeURIComponent but preserve '=' which is valid in path segments (RFC 3986)
@@ -614,11 +653,24 @@ export function registerGraphTools(
     if (endpointConfig?.isExcelOp) {
       paramSchema['workbookSessionId'] = z
         .string()
+        .regex(
+          WORKBOOK_SESSION_ID_REGEX,
+          'Workbook session ID may only contain URL-safe token characters (A-Z a-z 0-9 + / = . _ -).'
+        )
         .describe(
           'Optional Excel workbook session ID from create-excel-session, sent as the ' +
             'workbook-session-id header so a batch of edits shares one fast, consistent session.'
         )
         .optional();
+
+      // Constrain the un-encoded A1 address at the schema boundary so the LLM gets a
+      // clear validation error up front (runtime guard above covers the execute-tool path).
+      if (paramSchema['address'] !== undefined) {
+        paramSchema['address'] = z
+          .string()
+          .regex(EXCEL_ADDRESS_REGEX, `Must be an ${EXCEL_ADDRESS_HINT}`)
+          .describe(`A1-style range address, e.g. "A1:B2" or "Sheet1!A1:C10".`);
+      }
     }
 
     // Add timezone parameter for calendar endpoints that support it
