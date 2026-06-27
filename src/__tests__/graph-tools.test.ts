@@ -1040,4 +1040,121 @@ describe('graph-tools', () => {
       expect(options.headers['workbook-session-id']).toBeUndefined();
     });
   });
+
+  // ---- 9. Excel range editing behavior ----
+  describe('excel range editing', () => {
+    function setRangeEndpoint() {
+      const endpoint = makeEndpoint({
+        alias: 'set-excel-range',
+        method: 'patch',
+        path: "/drives/:driveId/items/:driveItemId/workbook/worksheets/:workbookWorksheetId/range(address=':address')",
+        parameters: [
+          { name: 'driveId', type: 'Path', schema: z.string() },
+          { name: 'driveItemId', type: 'Path', schema: z.string() },
+          { name: 'workbookWorksheetId', type: 'Path', schema: z.string() },
+          { name: 'address', type: 'Path', schema: z.string() },
+          { name: 'body', type: 'Body', schema: z.object({ values: z.any() }).passthrough() },
+        ],
+      });
+      const config = makeConfig({
+        toolName: 'set-excel-range',
+        method: 'patch',
+        pathPattern:
+          "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')",
+        scopes: ['Files.ReadWrite'],
+        isExcelOp: true,
+        skipEncoding: ['address'],
+      });
+      return { endpoint, config };
+    }
+
+    it('PATCHes the addressed range with the body and leaves the address un-encoded', async () => {
+      const { endpoint, config } = setRangeEndpoint();
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const graphClient = createMockGraphClient([
+        { content: [{ type: 'text', text: JSON.stringify({ address: 'Sheet1!A1:B2' }) }] },
+      ]);
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, graphClient as any);
+
+      const tool = server.tools.get('set-excel-range');
+      await tool!.handler({
+        driveId: 'd1',
+        driveItemId: 'item1',
+        workbookWorksheetId: 'ws1',
+        address: 'A1:B2',
+        body: { values: [['Name', 1]] },
+      });
+
+      const [requestedPath, options] = graphClient.graphRequest.mock.calls[0];
+      expect(options.method).toBe('PATCH');
+      expect(options.body).toBe('{"values":[["Name",1]]}');
+      // address contains ':' — skipEncoding keeps it literal (no %3A)
+      expect(requestedPath).toContain("range(address='A1:B2')");
+      expect(requestedPath).not.toContain('%3A');
+    });
+
+    it('POSTs a clear action body to the addressed range', async () => {
+      const endpoint = makeEndpoint({
+        alias: 'clear-excel-range',
+        method: 'post',
+        path: "/drives/:driveId/items/:driveItemId/workbook/worksheets/:workbookWorksheetId/range(address=':address')/clear",
+        parameters: [
+          { name: 'driveId', type: 'Path', schema: z.string() },
+          { name: 'driveItemId', type: 'Path', schema: z.string() },
+          { name: 'workbookWorksheetId', type: 'Path', schema: z.string() },
+          { name: 'address', type: 'Path', schema: z.string() },
+          { name: 'body', type: 'Body', schema: z.object({ applyTo: z.string() }).passthrough() },
+        ],
+      });
+      const config = makeConfig({
+        toolName: 'clear-excel-range',
+        method: 'post',
+        pathPattern:
+          "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')/clear",
+        scopes: ['Files.ReadWrite'],
+        isExcelOp: true,
+        skipEncoding: ['address'],
+      });
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const graphClient = createMockGraphClient([
+        { content: [{ type: 'text', text: JSON.stringify({}) }] },
+      ]);
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, graphClient as any);
+
+      const tool = server.tools.get('clear-excel-range');
+      await tool!.handler({
+        driveId: 'd1',
+        driveItemId: 'item1',
+        workbookWorksheetId: 'ws1',
+        address: 'A1:B2',
+        body: { applyTo: 'Contents' },
+      });
+
+      const [requestedPath, options] = graphClient.graphRequest.mock.calls[0];
+      expect(options.method).toBe('POST');
+      expect(options.body).toBe('{"applyTo":"Contents"}');
+      expect(requestedPath).toContain("range(address='A1:B2')/clear");
+    });
+
+    it('is filtered out in read-only mode (PATCH is non-GET)', async () => {
+      // registerGraphTools(server, graphClient, readOnly) — 3rd positional arg is the read-only flag.
+      const { endpoint, config } = setRangeEndpoint();
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, createMockGraphClient() as any, /* readOnly */ true);
+
+      expect(server.tools.has('set-excel-range')).toBe(false);
+    });
+  });
 });
