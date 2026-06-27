@@ -398,20 +398,6 @@
     "scopes": ["Files.ReadWrite"]
   },
   {
-    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range()/format",
-    "method": "patch",
-    "toolName": "format-excel-range",
-    "isExcelOp": true,
-    "scopes": ["Files.ReadWrite"]
-  },
-  {
-    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range()/sort",
-    "method": "patch",
-    "toolName": "sort-excel-range",
-    "isExcelOp": true,
-    "scopes": ["Files.ReadWrite"]
-  },
-  {
     "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')",
     "method": "get",
     "toolName": "get-excel-range",
@@ -420,11 +406,194 @@
     "skipEncoding": ["address"]
   },
   {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')",
+    "method": "patch",
+    "toolName": "set-excel-range",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "skipEncoding": ["address"],
+    "llmTip": "Edit cells. Body sets values, formulas, and/or numberFormat as 2-D arrays matching the address dimensions, e.g. {\"values\": [[\"Name\", 1], [\"Bob\", 2]]}. address is A1-style like 'A1:B2' (worksheet already in the path). Use formulas for cells like \"=SUM(A1:A10)\". Pass workbookSessionId from create-excel-session to batch many edits efficiently."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')/clear",
+    "method": "post",
+    "toolName": "clear-excel-range",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "skipEncoding": ["address"],
+    "llmTip": "Clears a range. Body: {\"applyTo\": \"All\"|\"Formats\"|\"Contents\"|\"Hyperlinks\"}. 'Contents' keeps formatting."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')/insert",
+    "method": "post",
+    "toolName": "insert-excel-range",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "skipEncoding": ["address"],
+    "llmTip": "Inserts cells, shifting existing ones. Body: {\"shift\": \"Down\"|\"Right\"}."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')/delete",
+    "method": "post",
+    "toolName": "delete-excel-range",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "skipEncoding": ["address"],
+    "llmTip": "Deletes cells, shifting remaining ones. Body: {\"shift\": \"Up\"|\"Left\"}."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')/merge",
+    "method": "post",
+    "toolName": "merge-excel-range",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "skipEncoding": ["address"],
+    "llmTip": "Merges cells. Body: {\"across\": true} merges each row separately; false merges the whole range into one cell."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')/unmerge",
+    "method": "post",
+    "toolName": "unmerge-excel-range",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "skipEncoding": ["address"]
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')/format",
+    "method": "patch",
+    "toolName": "format-excel-range",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "skipEncoding": ["address"],
+    "llmTip": "Range-level format: columnWidth, rowHeight, horizontalAlignment (General/Left/Center/Right), verticalAlignment (Top/Center/Bottom), wrapText (bool). For font use format-excel-range-font; for background color use format-excel-range-fill."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')/format/font",
+    "method": "patch",
+    "toolName": "format-excel-range-font",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "skipEncoding": ["address"],
+    "llmTip": "Sets font on a range. Body fields (all optional): name, size (number), color (hex like \"#FF0000\"), bold, italic, underline (\"None\"|\"Single\"|\"Double\")."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')/format/fill",
+    "method": "patch",
+    "toolName": "format-excel-range-fill",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "skipEncoding": ["address"],
+    "llmTip": "Sets cell background fill. Body: {\"color\": \"#FFFF00\"} (hex)."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')/sort/apply",
+    "method": "post",
+    "toolName": "sort-excel-range",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "skipEncoding": ["address"],
+    "llmTip": "Sorts a range. Body: {\"fields\": [{\"key\": 0, \"ascending\": true}], \"hasHeaders\": true}. key is the 0-based column index within the range."
+  },
+  {
     "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets",
     "method": "get",
     "toolName": "list-excel-worksheets",
     "isExcelOp": true,
     "scopes": ["Files.Read"]
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/usedRange()",
+    "method": "get",
+    "toolName": "get-excel-used-range",
+    "isExcelOp": true,
+    "scopes": ["Files.Read"],
+    "llmTip": "Returns the populated area of a worksheet (values, formulas, address) — use this before editing to see existing data and find the next empty row."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/add",
+    "method": "post",
+    "toolName": "add-excel-worksheet",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "llmTip": "Adds a worksheet. Body: {\"name\": \"Sheet name\"} (optional)."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}",
+    "method": "patch",
+    "toolName": "update-excel-worksheet",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "llmTip": "Rename/move/hide a worksheet. Body fields (optional): name, position (0-based), visibility (\"Visible\"|\"Hidden\"|\"VeryHidden\")."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}",
+    "method": "delete",
+    "toolName": "delete-excel-worksheet",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"]
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/tables/add",
+    "method": "post",
+    "toolName": "add-excel-table",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "llmTip": "Creates a table on a worksheet. Body: {\"address\": \"A1:C10\", \"hasHeaders\": true}."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/tables/{workbookTable-id}/rows/add",
+    "method": "post",
+    "toolName": "add-excel-table-row",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "llmTip": "Appends/inserts table rows. Body: {\"values\": [[\"a\", 1], [\"b\", 2]], \"index\": null}. index null appends to the end. Tables are addressed by id at the workbook level (no worksheet in path); list tables to get the id."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/tables/{workbookTable-id}/columns/add",
+    "method": "post",
+    "toolName": "add-excel-table-column",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "llmTip": "Adds a table column. Body: {\"name\": \"Header\", \"values\": [[\"x\"], [\"y\"]], \"index\": null}."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/tables/{workbookTable-id}",
+    "method": "patch",
+    "toolName": "update-excel-table",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "llmTip": "Updates table properties. Body fields (optional): name, showHeaders (bool), showTotals (bool), style (e.g. \"TableStyleMedium2\")."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/tables/{workbookTable-id}",
+    "method": "delete",
+    "toolName": "delete-excel-table",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"]
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/createSession",
+    "method": "post",
+    "toolName": "create-excel-session",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "llmTip": "Starts a workbook session for fast batch edits. Body: {\"persistChanges\": true} writes changes to the file; false is a sandbox. Returns an id — pass it as workbookSessionId on subsequent Excel tools, then call close-excel-session."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/closeSession",
+    "method": "post",
+    "toolName": "close-excel-session",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "llmTip": "Closes a workbook session. Pass the session id as workbookSessionId."
+  },
+  {
+    "pathPattern": "/drives/{drive-id}/items/{driveItem-id}/workbook/refreshSession",
+    "method": "post",
+    "toolName": "refresh-excel-session",
+    "isExcelOp": true,
+    "scopes": ["Files.ReadWrite"],
+    "llmTip": "Keeps a workbook session alive. Pass the session id as workbookSessionId."
   },
   {
     "pathPattern": "/me/onenote/notebooks",
