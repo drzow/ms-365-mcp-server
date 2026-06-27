@@ -26,10 +26,12 @@
 Repurpose the currently-dead `isExcelOp` flag: when set, inject an optional `workbookSessionId` tool param that becomes the `workbook-session-id` request header. Pure code change, unit-testable without regeneration.
 
 **Files:**
+
 - Modify: `src/graph-tools.ts` (EndpointConfig interface; param injection in `registerGraphTools`; header set + skip-list in `executeGraphTool`)
 - Test: `src/__tests__/graph-tools.test.ts`
 
 **Interfaces:**
+
 - Produces: `EndpointConfig.isExcelOp?: boolean`; tools whose config has `isExcelOp: true` expose an optional `workbookSessionId: string` param; when supplied, `executeGraphTool` sets header `workbook-session-id`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -37,112 +39,119 @@ Repurpose the currently-dead `isExcelOp` flag: when set, inject an optional `wor
 Add to the end of `src/__tests__/graph-tools.test.ts`, before the final closing `});` of the top-level `describe('graph-tools', ...)`:
 
 ```ts
-  // ---- 8. isExcelOp workbook session header ----
-  describe('isExcelOp workbook session header', () => {
-    it('exposes a workbookSessionId param when isExcelOp is true', async () => {
-      const endpoint = makeEndpoint({
-        alias: 'set-excel-range',
-        method: 'patch',
-        path: "/drives/:driveId/items/:driveItemId/workbook/worksheets/:workbookWorksheetId/range(address=':address')",
-        parameters: [{ name: 'body', type: 'Body', schema: z.object({ values: z.any() }).passthrough() }],
-      });
-      const config = makeConfig({
-        toolName: 'set-excel-range',
-        method: 'patch',
-        pathPattern: "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')",
-        scopes: ['Files.ReadWrite'],
-        isExcelOp: true,
-        skipEncoding: ['address'],
-      });
-      mockEndpoints.push(endpoint);
-      mockEndpointsJson = [config];
-
-      const server = createMockServer();
-      const { registerGraphTools } = await loadModule();
-      registerGraphTools(server as any, createMockGraphClient() as any);
-
-      const tool = server.tools.get('set-excel-range');
-      expect(tool).toBeDefined();
-      expect(tool!.schema['workbookSessionId']).toBeDefined();
-      expect(tool!.schema['workbookSessionId'].description).toContain('workbook-session-id');
+// ---- 8. isExcelOp workbook session header ----
+describe('isExcelOp workbook session header', () => {
+  it('exposes a workbookSessionId param when isExcelOp is true', async () => {
+    const endpoint = makeEndpoint({
+      alias: 'set-excel-range',
+      method: 'patch',
+      path: "/drives/:driveId/items/:driveItemId/workbook/worksheets/:workbookWorksheetId/range(address=':address')",
+      parameters: [
+        { name: 'body', type: 'Body', schema: z.object({ values: z.any() }).passthrough() },
+      ],
     });
-
-    it('does NOT add workbookSessionId when isExcelOp is absent', async () => {
-      const endpoint = makeEndpoint();
-      const config = makeConfig(); // no isExcelOp
-      mockEndpoints.push(endpoint);
-      mockEndpointsJson = [config];
-
-      const server = createMockServer();
-      const { registerGraphTools } = await loadModule();
-      registerGraphTools(server as any, createMockGraphClient() as any);
-
-      const tool = server.tools.get('test-tool');
-      expect(tool!.schema['workbookSessionId']).toBeUndefined();
+    const config = makeConfig({
+      toolName: 'set-excel-range',
+      method: 'patch',
+      pathPattern:
+        "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')",
+      scopes: ['Files.ReadWrite'],
+      isExcelOp: true,
+      skipEncoding: ['address'],
     });
+    mockEndpoints.push(endpoint);
+    mockEndpointsJson = [config];
 
-    it('sets the workbook-session-id header when workbookSessionId is passed', async () => {
-      const endpoint = makeEndpoint({
-        alias: 'set-excel-range',
-        method: 'patch',
-        path: '/drives/:driveId/items/:driveItemId/workbook',
-        parameters: [{ name: 'body', type: 'Body', schema: z.object({ values: z.any() }).passthrough() }],
-      });
-      const config = makeConfig({
-        toolName: 'set-excel-range',
-        method: 'patch',
-        pathPattern: '/drives/{drive-id}/items/{driveItem-id}/workbook',
-        scopes: ['Files.ReadWrite'],
-        isExcelOp: true,
-      });
-      mockEndpoints.push(endpoint);
-      mockEndpointsJson = [config];
+    const server = createMockServer();
+    const { registerGraphTools } = await loadModule();
+    registerGraphTools(server as any, createMockGraphClient() as any);
 
-      const graphClient = createMockGraphClient([
-        { content: [{ type: 'text', text: JSON.stringify({ ok: true }) }] },
-      ]);
-      const server = createMockServer();
-      const { registerGraphTools } = await loadModule();
-      registerGraphTools(server as any, graphClient as any);
-
-      const tool = server.tools.get('set-excel-range');
-      await tool!.handler({ body: { values: [[1]] }, workbookSessionId: 'SESSION-123' });
-
-      const [, options] = graphClient.graphRequest.mock.calls[0];
-      expect(options.headers['workbook-session-id']).toBe('SESSION-123');
-    });
-
-    it('omits the workbook-session-id header when no session id is passed', async () => {
-      const endpoint = makeEndpoint({
-        alias: 'set-excel-range',
-        method: 'patch',
-        path: '/drives/:driveId/items/:driveItemId/workbook',
-        parameters: [{ name: 'body', type: 'Body', schema: z.object({ values: z.any() }).passthrough() }],
-      });
-      const config = makeConfig({
-        toolName: 'set-excel-range',
-        method: 'patch',
-        pathPattern: '/drives/{drive-id}/items/{driveItem-id}/workbook',
-        scopes: ['Files.ReadWrite'],
-        isExcelOp: true,
-      });
-      mockEndpoints.push(endpoint);
-      mockEndpointsJson = [config];
-
-      const graphClient = createMockGraphClient([
-        { content: [{ type: 'text', text: JSON.stringify({ ok: true }) }] },
-      ]);
-      const server = createMockServer();
-      const { registerGraphTools } = await loadModule();
-      registerGraphTools(server as any, graphClient as any);
-
-      const tool = server.tools.get('set-excel-range');
-      await tool!.handler({ body: { values: [[1]] } });
-
-      const [, options] = graphClient.graphRequest.mock.calls[0];
-      expect(options.headers['workbook-session-id']).toBeUndefined();
-    });
+    const tool = server.tools.get('set-excel-range');
+    expect(tool).toBeDefined();
+    expect(tool!.schema['workbookSessionId']).toBeDefined();
+    expect(tool!.schema['workbookSessionId'].description).toContain('workbook-session-id');
   });
+
+  it('does NOT add workbookSessionId when isExcelOp is absent', async () => {
+    const endpoint = makeEndpoint();
+    const config = makeConfig(); // no isExcelOp
+    mockEndpoints.push(endpoint);
+    mockEndpointsJson = [config];
+
+    const server = createMockServer();
+    const { registerGraphTools } = await loadModule();
+    registerGraphTools(server as any, createMockGraphClient() as any);
+
+    const tool = server.tools.get('test-tool');
+    expect(tool!.schema['workbookSessionId']).toBeUndefined();
+  });
+
+  it('sets the workbook-session-id header when workbookSessionId is passed', async () => {
+    const endpoint = makeEndpoint({
+      alias: 'set-excel-range',
+      method: 'patch',
+      path: '/drives/:driveId/items/:driveItemId/workbook',
+      parameters: [
+        { name: 'body', type: 'Body', schema: z.object({ values: z.any() }).passthrough() },
+      ],
+    });
+    const config = makeConfig({
+      toolName: 'set-excel-range',
+      method: 'patch',
+      pathPattern: '/drives/{drive-id}/items/{driveItem-id}/workbook',
+      scopes: ['Files.ReadWrite'],
+      isExcelOp: true,
+    });
+    mockEndpoints.push(endpoint);
+    mockEndpointsJson = [config];
+
+    const graphClient = createMockGraphClient([
+      { content: [{ type: 'text', text: JSON.stringify({ ok: true }) }] },
+    ]);
+    const server = createMockServer();
+    const { registerGraphTools } = await loadModule();
+    registerGraphTools(server as any, graphClient as any);
+
+    const tool = server.tools.get('set-excel-range');
+    await tool!.handler({ body: { values: [[1]] }, workbookSessionId: 'SESSION-123' });
+
+    const [, options] = graphClient.graphRequest.mock.calls[0];
+    expect(options.headers['workbook-session-id']).toBe('SESSION-123');
+  });
+
+  it('omits the workbook-session-id header when no session id is passed', async () => {
+    const endpoint = makeEndpoint({
+      alias: 'set-excel-range',
+      method: 'patch',
+      path: '/drives/:driveId/items/:driveItemId/workbook',
+      parameters: [
+        { name: 'body', type: 'Body', schema: z.object({ values: z.any() }).passthrough() },
+      ],
+    });
+    const config = makeConfig({
+      toolName: 'set-excel-range',
+      method: 'patch',
+      pathPattern: '/drives/{drive-id}/items/{driveItem-id}/workbook',
+      scopes: ['Files.ReadWrite'],
+      isExcelOp: true,
+    });
+    mockEndpoints.push(endpoint);
+    mockEndpointsJson = [config];
+
+    const graphClient = createMockGraphClient([
+      { content: [{ type: 'text', text: JSON.stringify({ ok: true }) }] },
+    ]);
+    const server = createMockServer();
+    const { registerGraphTools } = await loadModule();
+    registerGraphTools(server as any, graphClient as any);
+
+    const tool = server.tools.get('set-excel-range');
+    await tool!.handler({ body: { values: [[1]] } });
+
+    const [, options] = graphClient.graphRequest.mock.calls[0];
+    expect(options.headers['workbook-session-id']).toBeUndefined();
+  });
+});
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -164,15 +173,15 @@ In `src/graph-tools.ts`, add the field to the `EndpointConfig` interface (after 
 In `executeGraphTool`, add `'workbookSessionId'` to the control-parameter skip list (the array around lines 130-138):
 
 ```ts
-        [
-          'account',
-          'fetchAllPages',
-          'includeHeaders',
-          'excludeResponse',
-          'timezone',
-          'expandExtendedProperties',
-          'workbookSessionId',
-        ].includes(paramName)
+[
+  'account',
+  'fetchAllPages',
+  'includeHeaders',
+  'excludeResponse',
+  'timezone',
+  'expandExtendedProperties',
+  'workbookSessionId',
+].includes(paramName);
 ```
 
 - [ ] **Step 5: Set the `workbook-session-id` header**
@@ -180,10 +189,10 @@ In `executeGraphTool`, add `'workbookSessionId'` to the control-parameter skip l
 In `executeGraphTool`, just after the `config?.acceptType` block (around line 285, before the `queryParams` assembly), add:
 
 ```ts
-    if (config?.isExcelOp && params.workbookSessionId) {
-      headers['workbook-session-id'] = String(params.workbookSessionId);
-      logger.info('Setting workbook-session-id header for Excel operation');
-    }
+if (config?.isExcelOp && params.workbookSessionId) {
+  headers['workbook-session-id'] = String(params.workbookSessionId);
+  logger.info('Setting workbook-session-id header for Excel operation');
+}
 ```
 
 - [ ] **Step 6: Inject the `workbookSessionId` param at registration**
@@ -191,17 +200,17 @@ In `executeGraphTool`, just after the `config?.acceptType` block (around line 28
 In `registerGraphTools`, just after the `excludeResponse` param block (around line 603, before the `supportsTimezone` block), add:
 
 ```ts
-    // Excel workbook session support (endpoints flagged isExcelOp in endpoints.json).
-    // Lets a batch of edits share one persistent workbook session for speed + consistency.
-    if (endpointConfig?.isExcelOp) {
-      paramSchema['workbookSessionId'] = z
-        .string()
-        .describe(
-          'Optional Excel workbook session ID from create-excel-session, sent as the ' +
-            'workbook-session-id header so a batch of edits shares one fast, consistent session.'
-        )
-        .optional();
-    }
+// Excel workbook session support (endpoints flagged isExcelOp in endpoints.json).
+// Lets a batch of edits share one persistent workbook session for speed + consistency.
+if (endpointConfig?.isExcelOp) {
+  paramSchema['workbookSessionId'] = z
+    .string()
+    .describe(
+      'Optional Excel workbook session ID from create-excel-session, sent as the ' +
+        'workbook-session-id header so a batch of edits shares one fast, consistent session.'
+    )
+    .optional();
+}
 ```
 
 - [ ] **Step 7: Run tests to verify they pass**
@@ -226,11 +235,13 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Inject the four Excel write operations Microsoft's metadata omits, before the spec is trimmed: `PATCH range(address)` (values/formulas/numberFormat), `PATCH range(address)/format/font`, `PATCH range(address)/format/fill`, `POST range(address)/sort/apply`. Uses slim inline body schemas and clones the base range path's four path params.
 
 **Files:**
+
 - Create: `bin/modules/excel-augmentations.mjs`
 - Modify: `bin/modules/simplified-openapi.mjs` (import + call before the path-existence check)
 - Test: `test/excel-augmentations.test.ts`
 
 **Interfaces:**
+
 - Produces: `augmentExcelPaths(openApiSpec)` — mutates and returns `openApiSpec`, adding `.patch` to the existing `range(address='{address}')` path item and three new path items: `…/range(address='{address}')/format/font` (`patch`), `…/format/fill` (`patch`), `…/sort/apply` (`post`). Each new path item carries cloned path-level `parameters` including `address`. Throws if the base range path is absent.
 
 - [ ] **Step 1: Write the failing test**
@@ -253,7 +264,12 @@ function minimalSpec() {
           { name: 'drive-id', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'driveItem-id', in: 'path', required: true, schema: { type: 'string' } },
           { name: 'workbookWorksheet-id', in: 'path', required: true, schema: { type: 'string' } },
-          { name: 'address', in: 'path', required: true, schema: { type: 'string', nullable: true } },
+          {
+            name: 'address',
+            in: 'path',
+            required: true,
+            schema: { type: 'string', nullable: true },
+          },
         ],
       },
     },
@@ -447,17 +463,17 @@ import { augmentExcelPaths } from './excel-augmentations.mjs';
 Then in `createAndSaveSimplifiedOpenAPI`, call it immediately after the spec is parsed and before the path-existence check (between the `const openApiSpec = yaml.load(spec);` line and the `for (const endpoint of endpoints)` existence loop):
 
 ```js
-  const openApiSpec = yaml.load(spec);
+const openApiSpec = yaml.load(spec);
 
-  // Inject Excel write operations missing from Microsoft's metadata so the
-  // endpoints.json entries below resolve against real path items.
-  augmentExcelPaths(openApiSpec);
+// Inject Excel write operations missing from Microsoft's metadata so the
+// endpoints.json entries below resolve against real path items.
+augmentExcelPaths(openApiSpec);
 
-  for (const endpoint of endpoints) {
-    if (!openApiSpec.paths[endpoint.pathPattern]) {
-      throw new Error(`Path "${endpoint.pathPattern}" not found in OpenAPI spec.`);
-    }
+for (const endpoint of endpoints) {
+  if (!openApiSpec.paths[endpoint.pathPattern]) {
+    throw new Error(`Path "${endpoint.pathPattern}" not found in OpenAPI spec.`);
   }
+}
 ```
 
 - [ ] **Step 6: Commit**
@@ -477,12 +493,14 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Add 20 new endpoint entries, repoint the 2 broken existing ones, regenerate the client, and assert the tools appear via an integration smoke test.
 
 **Files:**
+
 - Modify: `src/endpoints.json` (replace the 5 existing Excel entries' block with the full 22-entry set)
 - Modify: `src/generated/client.ts` (regenerated — never hand-edited)
 - Modify: `openapi/openapi-trimmed.yaml` (regenerated artifact)
 - Test: `test/excel-tools-generated.test.ts`
 
 **Interfaces:**
+
 - Consumes: `augmentExcelPaths` (Task 2) — required for `format-excel-range-font`, `format-excel-range-fill`, `sort-excel-range` to resolve during generation.
 - Produces: generated `api.endpoints` aliases for all tools listed below, with the stated HTTP methods.
 
@@ -790,9 +808,11 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Validate the Excel-specific runtime behavior with synthetic endpoints (mocked client): addressed-range PATCH sends the body, `address` is not URL-encoded, POST actions send their body, and writes are filtered out in read-only mode.
 
 **Files:**
+
 - Test: `src/__tests__/graph-tools.test.ts` (append a new `describe` block)
 
 **Interfaces:**
+
 - Consumes: `registerGraphTools`, the test helpers `makeEndpoint`/`makeConfig`/`createMockGraphClient`/`createMockServer`/`loadModule` already in the file.
 
 - [ ] **Step 1: Write the failing tests**
@@ -800,121 +820,121 @@ Validate the Excel-specific runtime behavior with synthetic endpoints (mocked cl
 Append inside the top-level `describe('graph-tools', ...)` (before its closing `});`):
 
 ```ts
-  // ---- 9. Excel range editing behavior ----
-  describe('excel range editing', () => {
-    function setRangeEndpoint() {
-      const endpoint = makeEndpoint({
-        alias: 'set-excel-range',
-        method: 'patch',
-        path: "/drives/:driveId/items/:driveItemId/workbook/worksheets/:workbookWorksheetId/range(address=':address')",
-        parameters: [
-          { name: 'driveId', type: 'Path', schema: z.string() },
-          { name: 'driveItemId', type: 'Path', schema: z.string() },
-          { name: 'workbookWorksheetId', type: 'Path', schema: z.string() },
-          { name: 'address', type: 'Path', schema: z.string() },
-          { name: 'body', type: 'Body', schema: z.object({ values: z.any() }).passthrough() },
-        ],
-      });
-      const config = makeConfig({
-        toolName: 'set-excel-range',
-        method: 'patch',
-        pathPattern:
-          "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')",
-        scopes: ['Files.ReadWrite'],
-        isExcelOp: true,
-        skipEncoding: ['address'],
-      });
-      return { endpoint, config };
-    }
+// ---- 9. Excel range editing behavior ----
+describe('excel range editing', () => {
+  function setRangeEndpoint() {
+    const endpoint = makeEndpoint({
+      alias: 'set-excel-range',
+      method: 'patch',
+      path: "/drives/:driveId/items/:driveItemId/workbook/worksheets/:workbookWorksheetId/range(address=':address')",
+      parameters: [
+        { name: 'driveId', type: 'Path', schema: z.string() },
+        { name: 'driveItemId', type: 'Path', schema: z.string() },
+        { name: 'workbookWorksheetId', type: 'Path', schema: z.string() },
+        { name: 'address', type: 'Path', schema: z.string() },
+        { name: 'body', type: 'Body', schema: z.object({ values: z.any() }).passthrough() },
+      ],
+    });
+    const config = makeConfig({
+      toolName: 'set-excel-range',
+      method: 'patch',
+      pathPattern:
+        "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')",
+      scopes: ['Files.ReadWrite'],
+      isExcelOp: true,
+      skipEncoding: ['address'],
+    });
+    return { endpoint, config };
+  }
 
-    it('PATCHes the addressed range with the body and leaves the address un-encoded', async () => {
-      const { endpoint, config } = setRangeEndpoint();
-      mockEndpoints.push(endpoint);
-      mockEndpointsJson = [config];
+  it('PATCHes the addressed range with the body and leaves the address un-encoded', async () => {
+    const { endpoint, config } = setRangeEndpoint();
+    mockEndpoints.push(endpoint);
+    mockEndpointsJson = [config];
 
-      const graphClient = createMockGraphClient([
-        { content: [{ type: 'text', text: JSON.stringify({ address: 'Sheet1!A1:B2' }) }] },
-      ]);
-      const server = createMockServer();
-      const { registerGraphTools } = await loadModule();
-      registerGraphTools(server as any, graphClient as any);
+    const graphClient = createMockGraphClient([
+      { content: [{ type: 'text', text: JSON.stringify({ address: 'Sheet1!A1:B2' }) }] },
+    ]);
+    const server = createMockServer();
+    const { registerGraphTools } = await loadModule();
+    registerGraphTools(server as any, graphClient as any);
 
-      const tool = server.tools.get('set-excel-range');
-      await tool!.handler({
-        driveId: 'd1',
-        driveItemId: 'item1',
-        workbookWorksheetId: 'ws1',
-        address: 'A1:B2',
-        body: { values: [['Name', 1]] },
-      });
-
-      const [requestedPath, options] = graphClient.graphRequest.mock.calls[0];
-      expect(options.method).toBe('PATCH');
-      expect(options.body).toBe('{"values":[["Name",1]]}');
-      // address contains ':' — skipEncoding keeps it literal (no %3A)
-      expect(requestedPath).toContain("range(address='A1:B2')");
-      expect(requestedPath).not.toContain('%3A');
+    const tool = server.tools.get('set-excel-range');
+    await tool!.handler({
+      driveId: 'd1',
+      driveItemId: 'item1',
+      workbookWorksheetId: 'ws1',
+      address: 'A1:B2',
+      body: { values: [['Name', 1]] },
     });
 
-    it('POSTs a clear action body to the addressed range', async () => {
-      const endpoint = makeEndpoint({
-        alias: 'clear-excel-range',
-        method: 'post',
-        path: "/drives/:driveId/items/:driveItemId/workbook/worksheets/:workbookWorksheetId/range(address=':address')/clear",
-        parameters: [
-          { name: 'driveId', type: 'Path', schema: z.string() },
-          { name: 'driveItemId', type: 'Path', schema: z.string() },
-          { name: 'workbookWorksheetId', type: 'Path', schema: z.string() },
-          { name: 'address', type: 'Path', schema: z.string() },
-          { name: 'body', type: 'Body', schema: z.object({ applyTo: z.string() }).passthrough() },
-        ],
-      });
-      const config = makeConfig({
-        toolName: 'clear-excel-range',
-        method: 'post',
-        pathPattern:
-          "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')/clear",
-        scopes: ['Files.ReadWrite'],
-        isExcelOp: true,
-        skipEncoding: ['address'],
-      });
-      mockEndpoints.push(endpoint);
-      mockEndpointsJson = [config];
-
-      const graphClient = createMockGraphClient([
-        { content: [{ type: 'text', text: JSON.stringify({}) }] },
-      ]);
-      const server = createMockServer();
-      const { registerGraphTools } = await loadModule();
-      registerGraphTools(server as any, graphClient as any);
-
-      const tool = server.tools.get('clear-excel-range');
-      await tool!.handler({
-        driveId: 'd1',
-        driveItemId: 'item1',
-        workbookWorksheetId: 'ws1',
-        address: 'A1:B2',
-        body: { applyTo: 'Contents' },
-      });
-
-      const [requestedPath, options] = graphClient.graphRequest.mock.calls[0];
-      expect(options.method).toBe('POST');
-      expect(options.body).toBe('{"applyTo":"Contents"}');
-      expect(requestedPath).toContain("range(address='A1:B2')/clear");
-    });
-
-    it('is filtered out in read-only mode (PATCH is non-GET)', async () => {
-      const { endpoint, config } = setRangeEndpoint();
-      mockEndpoints.push(endpoint);
-      mockEndpointsJson = [config];
-
-      const server = createMockServer();
-      const { registerGraphTools } = await loadModule();
-      registerGraphTools(server as any, createMockGraphClient() as any, /* readOnly */ true);
-
-      expect(server.tools.has('set-excel-range')).toBe(false);
-    });
+    const [requestedPath, options] = graphClient.graphRequest.mock.calls[0];
+    expect(options.method).toBe('PATCH');
+    expect(options.body).toBe('{"values":[["Name",1]]}');
+    // address contains ':' — skipEncoding keeps it literal (no %3A)
+    expect(requestedPath).toContain("range(address='A1:B2')");
+    expect(requestedPath).not.toContain('%3A');
   });
+
+  it('POSTs a clear action body to the addressed range', async () => {
+    const endpoint = makeEndpoint({
+      alias: 'clear-excel-range',
+      method: 'post',
+      path: "/drives/:driveId/items/:driveItemId/workbook/worksheets/:workbookWorksheetId/range(address=':address')/clear",
+      parameters: [
+        { name: 'driveId', type: 'Path', schema: z.string() },
+        { name: 'driveItemId', type: 'Path', schema: z.string() },
+        { name: 'workbookWorksheetId', type: 'Path', schema: z.string() },
+        { name: 'address', type: 'Path', schema: z.string() },
+        { name: 'body', type: 'Body', schema: z.object({ applyTo: z.string() }).passthrough() },
+      ],
+    });
+    const config = makeConfig({
+      toolName: 'clear-excel-range',
+      method: 'post',
+      pathPattern:
+        "/drives/{drive-id}/items/{driveItem-id}/workbook/worksheets/{workbookWorksheet-id}/range(address='{address}')/clear",
+      scopes: ['Files.ReadWrite'],
+      isExcelOp: true,
+      skipEncoding: ['address'],
+    });
+    mockEndpoints.push(endpoint);
+    mockEndpointsJson = [config];
+
+    const graphClient = createMockGraphClient([
+      { content: [{ type: 'text', text: JSON.stringify({}) }] },
+    ]);
+    const server = createMockServer();
+    const { registerGraphTools } = await loadModule();
+    registerGraphTools(server as any, graphClient as any);
+
+    const tool = server.tools.get('clear-excel-range');
+    await tool!.handler({
+      driveId: 'd1',
+      driveItemId: 'item1',
+      workbookWorksheetId: 'ws1',
+      address: 'A1:B2',
+      body: { applyTo: 'Contents' },
+    });
+
+    const [requestedPath, options] = graphClient.graphRequest.mock.calls[0];
+    expect(options.method).toBe('POST');
+    expect(options.body).toBe('{"applyTo":"Contents"}');
+    expect(requestedPath).toContain("range(address='A1:B2')/clear");
+  });
+
+  it('is filtered out in read-only mode (PATCH is non-GET)', async () => {
+    const { endpoint, config } = setRangeEndpoint();
+    mockEndpoints.push(endpoint);
+    mockEndpointsJson = [config];
+
+    const server = createMockServer();
+    const { registerGraphTools } = await loadModule();
+    registerGraphTools(server as any, createMockGraphClient() as any, /* readOnly */ true);
+
+    expect(server.tools.has('set-excel-range')).toBe(false);
+  });
+});
 ```
 
 - [ ] **Step 2: Run to verify it passes**
@@ -939,6 +959,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 Document the new Excel editing surface and the session workflow.
 
 **Files:**
+
 - Modify: `README.md` (the **Excel Operations** entry around lines 112-113)
 
 **Interfaces:** none.
@@ -990,4 +1011,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - **`range()` vs `range(address='…')`:** the two pre-existing tools used the empty-parens `range()` form, which cannot target a specific range. Task 3 repoints `format-excel-range` to the addressed `…/format` path (native PATCH) and `sort-excel-range` to the augmented `…/sort/apply` POST.
 - **Tables are workbook-scoped for item ops:** `add-excel-table` is worksheet-scoped (`…/worksheets/{id}/tables/add`), but row/column/update/delete address the table directly at `…/workbook/tables/{workbookTable-id}/…`. Use `list` to obtain a table id (an existing list-tables tool is out of scope here; `get-excel-used-range` + Graph table listing can be added later if needed).
 - **Regeneration is deterministic and offline:** never pass `--force` to the generator; the cached spec is pinned.
+
+```
+
 ```

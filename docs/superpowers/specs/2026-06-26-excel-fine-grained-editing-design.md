@@ -41,27 +41,27 @@ params, pagination, and error handling.
 Microsoft's OpenAPI metadata is **incomplete for Excel writes**. Verified against
 the cached spec:
 
-| Capability | Spec status |
-|---|---|
-| `range(address='…')/clear`, `/merge`, `/unmerge`, `/insert`, `/delete` (POST) | present |
-| `range(address='…')/format` PATCH (alignment, column width, row height, wrap) | present |
-| `worksheets/add` (POST), `worksheets/{id}` (PATCH, DELETE) | present |
-| `worksheets/{id}/tables/add` (POST), `tables/{id}` (PATCH, DELETE) | present |
-| `tables/{id}/rows/add`, `tables/{id}/columns/add` (POST) | present |
-| `workbook/createSession`, `closeSession`, `refreshSession` (POST) | present |
-| `worksheets/{id}/usedRange()` (GET) | present |
-| **`range(address='…')` PATCH (set values/formulas/numberFormat)** | **GET only — missing** |
-| **`range(address='…')/format/font` and `/fill` (PATCH)** | **missing (modeled as nested nav props)** |
-| **`range(address='…')/sort/apply` (POST)** | **missing** |
+| Capability                                                                    | Spec status                               |
+| ----------------------------------------------------------------------------- | ----------------------------------------- |
+| `range(address='…')/clear`, `/merge`, `/unmerge`, `/insert`, `/delete` (POST) | present                                   |
+| `range(address='…')/format` PATCH (alignment, column width, row height, wrap) | present                                   |
+| `worksheets/add` (POST), `worksheets/{id}` (PATCH, DELETE)                    | present                                   |
+| `worksheets/{id}/tables/add` (POST), `tables/{id}` (PATCH, DELETE)            | present                                   |
+| `tables/{id}/rows/add`, `tables/{id}/columns/add` (POST)                      | present                                   |
+| `workbook/createSession`, `closeSession`, `refreshSession` (POST)             | present                                   |
+| `worksheets/{id}/usedRange()` (GET)                                           | present                                   |
+| **`range(address='…')` PATCH (set values/formulas/numberFormat)**             | **GET only — missing**                    |
+| **`range(address='…')/format/font` and `/fill` (PATCH)**                      | **missing (modeled as nested nav props)** |
+| **`range(address='…')/sort/apply` (POST)**                                    | **missing**                               |
 
-`simplified-openapi.mjs` *throws* if an `endpoints.json` path is absent from the
+`simplified-openapi.mjs` _throws_ if an `endpoints.json` path is absent from the
 spec, and silently drops a tool if the requested method is absent. So the
 headline features (set cell values, font/fill, addressed sort) cannot be added by
 listing them in `endpoints.json` alone.
 
 Two pre-existing bugs are in scope to fix: `format-excel-range` and
 `sort-excel-range` use the empty-parens `range()/format` and `range()/sort`
-forms, which provide no way to specify *which* range — they effectively target
+forms, which provide no way to specify _which_ range — they effectively target
 nothing.
 
 ## Chosen approach: spec augmentation
@@ -123,46 +123,46 @@ All tools live under `…/workbook/worksheets/{workbookWorksheet-id}/…` (or
 
 ### Cell / range content
 
-| Tool | Method · path | Body / notes |
-|---|---|---|
-| `set-excel-range` *(augmented)* | PATCH `range(address='{address}')` | `values` / `formulas` / `numberFormat` as 2-D arrays. The headline "edit individual cells" capability. |
-| `clear-excel-range` | POST `range(address='{address}')/clear` | `{ applyTo: All\|Formats\|Contents\|Hyperlinks }` |
-| `insert-excel-range` | POST `range(address='{address}')/insert` | `{ shift: Down\|Right }` |
-| `delete-excel-range` | POST `range(address='{address}')/delete` | `{ shift: Up\|Left }` |
-| `merge-excel-range` | POST `range(address='{address}')/merge` | `{ across: bool }` |
-| `unmerge-excel-range` | POST `range(address='{address}')/unmerge` | none |
+| Tool                            | Method · path                             | Body / notes                                                                                           |
+| ------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `set-excel-range` _(augmented)_ | PATCH `range(address='{address}')`        | `values` / `formulas` / `numberFormat` as 2-D arrays. The headline "edit individual cells" capability. |
+| `clear-excel-range`             | POST `range(address='{address}')/clear`   | `{ applyTo: All\|Formats\|Contents\|Hyperlinks }`                                                      |
+| `insert-excel-range`            | POST `range(address='{address}')/insert`  | `{ shift: Down\|Right }`                                                                               |
+| `delete-excel-range`            | POST `range(address='{address}')/delete`  | `{ shift: Up\|Left }`                                                                                  |
+| `merge-excel-range`             | POST `range(address='{address}')/merge`   | `{ across: bool }`                                                                                     |
+| `unmerge-excel-range`           | POST `range(address='{address}')/unmerge` | none                                                                                                   |
 
 ### Formatting
 
-| Tool | Method · path | Body / notes |
-|---|---|---|
-| `format-excel-range` *(fixed)* | PATCH `range(address='{address}')/format` | Re-point from `range()/format`. Alignment, wrap, column width, row height. |
-| `format-excel-range-font` *(augmented)* | PATCH `range(address='{address}')/format/font` | `name`, `size`, `color`, `bold`, `italic`, `underline` |
-| `format-excel-range-fill` *(augmented)* | PATCH `range(address='{address}')/format/fill` | `color` |
-| `sort-excel-range` *(fixed, augmented)* | POST `range(address='{address}')/sort/apply` | Re-point from PATCH `range()/sort`. `fields`, `matchCase`, `hasHeaders`. |
+| Tool                                    | Method · path                                  | Body / notes                                                               |
+| --------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------- |
+| `format-excel-range` _(fixed)_          | PATCH `range(address='{address}')/format`      | Re-point from `range()/format`. Alignment, wrap, column width, row height. |
+| `format-excel-range-font` _(augmented)_ | PATCH `range(address='{address}')/format/font` | `name`, `size`, `color`, `bold`, `italic`, `underline`                     |
+| `format-excel-range-fill` _(augmented)_ | PATCH `range(address='{address}')/format/fill` | `color`                                                                    |
+| `sort-excel-range` _(fixed, augmented)_ | POST `range(address='{address}')/sort/apply`   | Re-point from PATCH `range()/sort`. `fields`, `matchCase`, `hasHeaders`.   |
 
 Borders are out of scope (per-edge style/color/weight; deferred).
 
 ### Worksheets
 
-| Tool | Method · path | Body / notes |
-|---|---|---|
-| `add-excel-worksheet` | POST `worksheets/add` | `{ name? }` |
-| `update-excel-worksheet` | PATCH `worksheets/{workbookWorksheet-id}` | `name`, `position`, `visibility` |
-| `delete-excel-worksheet` | DELETE `worksheets/{workbookWorksheet-id}` | none |
-| `get-excel-used-range` | GET `worksheets/{workbookWorksheet-id}/usedRange()` | Read the populated area (`Files.Read`). |
+| Tool                     | Method · path                                       | Body / notes                            |
+| ------------------------ | --------------------------------------------------- | --------------------------------------- |
+| `add-excel-worksheet`    | POST `worksheets/add`                               | `{ name? }`                             |
+| `update-excel-worksheet` | PATCH `worksheets/{workbookWorksheet-id}`           | `name`, `position`, `visibility`        |
+| `delete-excel-worksheet` | DELETE `worksheets/{workbookWorksheet-id}`          | none                                    |
+| `get-excel-used-range`   | GET `worksheets/{workbookWorksheet-id}/usedRange()` | Read the populated area (`Files.Read`). |
 
 (`list-excel-worksheets` and `get-excel-range` already exist.)
 
 ### Tables
 
-| Tool | Method · path | Body / notes |
-|---|---|---|
-| `add-excel-table` | POST `worksheets/{workbookWorksheet-id}/tables/add` | `{ address, hasHeaders }` |
-| `add-excel-table-row` | POST `tables/{workbookTable-id}/rows/add` | `{ values, index? }` |
-| `add-excel-table-column` | POST `tables/{workbookTable-id}/columns/add` | `{ values?, index?, name? }` |
-| `update-excel-table` | PATCH `tables/{workbookTable-id}` | `name`, `showHeaders`, `showTotals`, `style` |
-| `delete-excel-table` | DELETE `tables/{workbookTable-id}` | none |
+| Tool                     | Method · path                                       | Body / notes                                 |
+| ------------------------ | --------------------------------------------------- | -------------------------------------------- |
+| `add-excel-table`        | POST `worksheets/{workbookWorksheet-id}/tables/add` | `{ address, hasHeaders }`                    |
+| `add-excel-table-row`    | POST `tables/{workbookTable-id}/rows/add`           | `{ values, index? }`                         |
+| `add-excel-table-column` | POST `tables/{workbookTable-id}/columns/add`        | `{ values?, index?, name? }`                 |
+| `update-excel-table`     | PATCH `tables/{workbookTable-id}`                   | `name`, `showHeaders`, `showTotals`, `style` |
+| `delete-excel-table`     | DELETE `tables/{workbookTable-id}`                  | none                                         |
 
 Path note: `add-excel-table` creates the table on a specific worksheet
 (`…/worksheets/{workbookWorksheet-id}/tables/add`). The table-item operations
@@ -172,11 +172,11 @@ since a table id is unique within the workbook.
 
 ### Sessions
 
-| Tool | Method · path | Body / notes |
-|---|---|---|
-| `create-excel-session` | POST `workbook/createSession` | `{ persistChanges: bool }` → returns session `id`. |
-| `close-excel-session` | POST `workbook/closeSession` | Pass `workbookSessionId`. |
-| `refresh-excel-session` | POST `workbook/refreshSession` | Keeps a session alive. |
+| Tool                    | Method · path                  | Body / notes                                       |
+| ----------------------- | ------------------------------ | -------------------------------------------------- |
+| `create-excel-session`  | POST `workbook/createSession`  | `{ persistChanges: bool }` → returns session `id`. |
+| `close-excel-session`   | POST `workbook/closeSession`   | Pass `workbookSessionId`.                          |
+| `refresh-excel-session` | POST `workbook/refreshSession` | Keeps a session alive.                             |
 
 Plus the `workbookSessionId` param on all Excel tools (via `isExcelOp`).
 
