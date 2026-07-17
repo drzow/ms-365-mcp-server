@@ -1247,4 +1247,49 @@ describe('graph-tools', () => {
       expect(sid.safeParse('inject\r\nX-Evil: 1').success).toBe(false);
     });
   });
+
+  // ---- 11. org-mode gating for workScopes-only tools ----
+  describe('org-mode gating', () => {
+    function groupToolEndpointAndConfig() {
+      const endpoint = makeEndpoint({
+        alias: 'list-groups',
+        method: 'get',
+        path: '/groups',
+        parameters: [],
+      });
+      // workScopes ONLY (no `scopes`) — this is what makes it org-mode gated.
+      const config = makeConfig({
+        toolName: 'list-groups',
+        pathPattern: '/groups',
+        scopes: undefined,
+        workScopes: ['Group.Read.All'],
+      });
+      return { endpoint, config };
+    }
+
+    it('is skipped when orgMode is false (default)', async () => {
+      const { endpoint, config } = groupToolEndpointAndConfig();
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      // args: (server, graphClient, readOnly=false, enabledToolsPattern=undefined, orgMode=false)
+      registerGraphTools(server as any, createMockGraphClient() as any, false, undefined, false);
+
+      expect(server.tools.has('list-groups')).toBe(false);
+    });
+
+    it('is registered when orgMode is true', async () => {
+      const { endpoint, config } = groupToolEndpointAndConfig();
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, createMockGraphClient() as any, false, undefined, true);
+
+      expect(server.tools.has('list-groups')).toBe(true);
+    });
+  });
 });
