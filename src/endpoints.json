@@ -1459,5 +1459,73 @@
     "toolName": "assign-user-license",
     "workScopes": ["User.ReadWrite.All"],
     "llmTip": "Add or remove licenses. Body: {addLicenses: [], removeLicenses: [{skuId: 'sku-guid'}]}. To remove all licenses, first GET /users/{id}?$select=assignedLicenses to get current SKU IDs, then pass them all in removeLicenses."
+  },
+  {
+    "pathPattern": "/me/memberOf",
+    "method": "get",
+    "toolName": "list-my-groups",
+    "workScopes": ["Group.Read.All"],
+    "llmTip": "Lists the groups and directory roles the signed-in user belongs to. Keep only objects where @odata.type is '#microsoft.graph.group'. Use $select=id,displayName,mail to reduce noise. Microsoft 365 group calendars belong to groups whose groupTypes contains 'Unified'."
+  },
+  {
+    "pathPattern": "/groups",
+    "method": "get",
+    "toolName": "list-groups",
+    "workScopes": ["Group.Read.All"],
+    "llmTip": "Find a group's id. By mail: $filter=mail eq 'Aleaquo@scalesology.com'. By name: $filter=startswith(displayName,'Alea'). Always $select=id,displayName,mail,groupTypes. Unified (Microsoft 365) groups have groupTypes containing 'Unified' and are the ones with a group calendar."
+  },
+  {
+    "pathPattern": "/groups/{group-id}",
+    "method": "get",
+    "toolName": "get-group",
+    "workScopes": ["Group.Read.All"],
+    "llmTip": "Get a single group by id. Use list-groups to find the id. Recommended $select=id,displayName,mail,groupTypes,visibility."
+  },
+  {
+    "pathPattern": "/groups/{group-id}/calendar/events",
+    "method": "get",
+    "toolName": "list-group-calendar-events",
+    "workScopes": ["Group.Read.All"],
+    "supportsTimezone": true,
+    "llmTip": "Lists events on a group's calendar. WARNING: does NOT expand recurring events — returns seriesMaster only. Use get-group-calendar-view with a date range for expanded instances. Get group-id from list-groups. Recommended $select=id,subject,start,end,organizer,location and $orderby=start/dateTime."
+  },
+  {
+    "pathPattern": "/groups/{group-id}/calendar/calendarView",
+    "method": "get",
+    "toolName": "get-group-calendar-view",
+    "workScopes": ["Group.Read.All"],
+    "supportsTimezone": true,
+    "llmTip": "Returns expanded recurring event instances on a group's calendar within a date range. Requires startDateTime and endDateTime query params in ISO 8601 (e.g. 2026-07-01T00:00:00Z). Get group-id from list-groups."
+  },
+  {
+    "pathPattern": "/groups/{group-id}/calendar/events/{event-id}",
+    "method": "get",
+    "toolName": "get-group-calendar-event",
+    "workScopes": ["Group.Read.All"],
+    "supportsTimezone": true,
+    "llmTip": "Gets a single event from a group's calendar. Get group-id from list-groups and event-id from list-group-calendar-events or get-group-calendar-view."
+  },
+  {
+    "pathPattern": "/groups/{group-id}/calendar/events",
+    "method": "post",
+    "toolName": "create-group-calendar-event",
+    "workScopes": ["Group.ReadWrite.All"],
+    "supportsTimezone": true,
+    "llmTip": "Creates an event owned by the group mailbox (survives individual accounts). Get group-id from list-groups. Body example: {\"subject\":\"...\",\"start\":{\"dateTime\":\"2026-07-10T15:00:00\",\"timeZone\":\"America/New_York\"},\"end\":{\"dateTime\":\"2026-07-10T16:00:00\",\"timeZone\":\"America/New_York\"},\"body\":{\"contentType\":\"HTML\",\"content\":\"...\"},\"location\":{\"displayName\":\"...\"},\"attendees\":[{\"emailAddress\":{\"address\":\"a@b.com\",\"name\":\"A\"},\"type\":\"required\"}]}. Requires org mode and Group.ReadWrite.All admin consent — a 403 means that consent or org mode is missing."
+  },
+  {
+    "pathPattern": "/groups/{group-id}/calendar/events/{event-id}",
+    "method": "patch",
+    "toolName": "update-group-calendar-event",
+    "workScopes": ["Group.ReadWrite.All"],
+    "supportsTimezone": true,
+    "llmTip": "Updates fields on an existing group calendar event. Send only the fields to change. Get ids from list-group-calendar-events."
+  },
+  {
+    "pathPattern": "/groups/{group-id}/calendar/events/{event-id}",
+    "method": "delete",
+    "toolName": "delete-group-calendar-event",
+    "workScopes": ["Group.ReadWrite.All"],
+    "llmTip": "Deletes an event from a group's calendar. This is irreversible. Get ids from list-group-calendar-events."
   }
 ]
