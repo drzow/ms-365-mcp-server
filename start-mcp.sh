@@ -47,4 +47,4 @@ echo "--- Launching tsx ---" >> "$LOG"
 echo "" >> "$LOG"
 
 # exec replaces this shell with tsx, so stdio passes through cleanly
-exec "$SERVER_DIR/node_modules/.bin/tsx" "$SERVER_DIR/src/index.ts" "$@" 2>> "$LOG"
+exec "$SERVER_DIR/node_modules/.bin/tsx" "$SERVER_DIR/src/index.ts" --org-mode "$@" 2>> "$LOG"

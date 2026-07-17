@@ -159,6 +159,10 @@ send-shared-mailbox-mail</sub>
 **User Management**  
 <sub>list-users</sub>
 
+**Group Calendars**  
+<sub>list-my-groups, list-groups, get-group, list-group-calendar-events, get-group-calendar-view,
+get-group-calendar-event, create-group-calendar-event, update-group-calendar-event, delete-group-calendar-event</sub>
+
 ## Organization/Work Mode
 
 To access work/school features (Teams, SharePoint, etc.), enable organization mode using any of these flags:
@@ -176,6 +180,26 @@ To access work/school features (Teams, SharePoint, etc.), enable organization mo
 
 Organization mode must be enabled from the start to access work account features. Without this flag, only personal
 account features (email, calendar, OneDrive, etc.) are available.
+
+### Group calendars (org mode)
+
+Microsoft 365 **group** calendars (shared team calendars) are separate from your
+personal calendars and require **org mode**. Tools:
+
+- `list-my-groups`, `list-groups`, `get-group` — discover groups and their IDs.
+  Find a group by mail with `$filter=mail eq 'team@contoso.com'`.
+- `list-group-calendar-events`, `get-group-calendar-view`, `get-group-calendar-event`
+- `create-group-calendar-event`, `update-group-calendar-event`, `delete-group-calendar-event`
+
+**Setup:**
+
+1. Grant the app the delegated scopes `Group.Read.All` and `Group.ReadWrite.All`
+   (admin consent required) on your Entra ID app registration.
+2. Run the server in org mode (`--org-mode`, or set `MS365_MCP_ORG_MODE=true`).
+3. Re-run `--login` so the new scopes are consented into your token.
+
+A `403` on write means the scopes were not admin-consented or the server is not
+in org mode.
 
 ## Shared Mailbox Access
 
