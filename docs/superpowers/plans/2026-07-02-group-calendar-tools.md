@@ -22,9 +22,11 @@
 ### Task 1: De-risk — regenerate against the full upstream spec and verify group paths
 
 **Files:**
+
 - No source changes. Touches (git-ignored) `openapi/openapi.yaml`, `openapi/openapi-trimmed.yaml`, `src/generated/client.ts`.
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: a verified answer to "do all nine group paths exist in the upstream Graph v1.0 metadata?" — which decides whether Task 1b (augmentation) is needed.
 
@@ -33,14 +35,17 @@
 - [ ] **Step 1: Re-download the full upstream spec and regenerate the client from the CURRENT (unchanged) endpoints.json**
 
 Run:
+
 ```bash
 npm run generate -- --force
 ```
+
 Expected: completes with "✅ Successfully generated client code". This proves the pipeline works and refreshes `openapi/openapi.yaml` to the full upstream metadata. (This step makes NO endpoints.json change yet.)
 
 - [ ] **Step 2: Verify the nine group paths exist as path keys in the freshly downloaded spec**
 
 Run:
+
 ```bash
 for p in \
   "/me/memberOf" \
@@ -52,6 +57,7 @@ for p in \
   grep -qF "  $p:" openapi/openapi.yaml && echo "FOUND   $p" || echo "MISSING $p"
 done
 ```
+
 Expected: all six FOUND. (These six path keys cover all nine tools — list and create share `/calendar/events`; get/update/delete share `/calendar/events/{event-id}`.)
 
 - [ ] **Step 3: Decision**
@@ -62,9 +68,11 @@ Expected: all six FOUND. (These six path keys cover all nine tools — list and 
 - [ ] **Step 4: No commit**
 
 Only git-ignored files changed. Nothing to commit. Confirm with:
+
 ```bash
 git status --porcelain
 ```
+
 Expected: empty (or only untracked git-ignored files, which won't be listed).
 
 ---
@@ -72,11 +80,13 @@ Expected: empty (or only untracked git-ignored files, which won't be listed).
 ### Task 1b (CONDITIONAL — only if Task 1 Step 2 reported a MISSING path): inject group calendar paths via augmentation
 
 **Files:**
+
 - Create: `bin/modules/group-augmentations.mjs`
 - Modify: `bin/modules/simplified-openapi.mjs` (call the new augmenter next to `augmentExcelPaths`)
 - Test: `test/group-augmentations.test.ts`
 
 **Interfaces:**
+
 - Consumes: the loaded `openApiSpec` object (mutated in place), same contract as `augmentExcelPaths`.
 - Produces: `augmentGroupCalendarPaths(openApiSpec)` — ensures the group calendar path items exist so `endpoints.json` entries resolve.
 
@@ -85,6 +95,7 @@ Expected: empty (or only untracked git-ignored files, which won't be listed).
 - [ ] **Step 1: Write the failing test**
 
 Create `test/group-augmentations.test.ts`:
+
 ```typescript
 import { describe, it, expect } from 'vitest';
 import { augmentGroupCalendarPaths } from '../bin/modules/group-augmentations.mjs';
@@ -128,6 +139,7 @@ Expected: FAIL — cannot resolve `../bin/modules/group-augmentations.mjs`.
 - [ ] **Step 3: Create the augmentation module**
 
 Create `bin/modules/group-augmentations.mjs`:
+
 ```javascript
 // Injects Microsoft 365 group calendar path items in case Microsoft's Graph
 // OpenAPI metadata omits them, so the declarative endpoints.json/generator
@@ -209,14 +221,16 @@ export function augmentGroupCalendarPaths(openApiSpec) {
 
   const eventsKey = '/groups/{group-id}/calendar/events';
   paths[eventsKey] = paths[eventsKey] || {};
-  paths[eventsKey].get = paths[eventsKey].get || getOp('groups.ListEvents', 'List group calendar events');
+  paths[eventsKey].get =
+    paths[eventsKey].get || getOp('groups.ListEvents', 'List group calendar events');
   paths[eventsKey].post =
     paths[eventsKey].post || writeOp('groups.CreateEvent', 'Create a group calendar event');
 
   const oneEventKey = '/groups/{group-id}/calendar/events/{event-id}';
   paths[oneEventKey] = paths[oneEventKey] || {};
   paths[oneEventKey].get =
-    paths[oneEventKey].get || getOp('groups.GetEvent', 'Get a group calendar event', [EVENT_ID_PARAM]);
+    paths[oneEventKey].get ||
+    getOp('groups.GetEvent', 'Get a group calendar event', [EVENT_ID_PARAM]);
   paths[oneEventKey].patch =
     paths[oneEventKey].patch ||
     writeOp('groups.UpdateEvent', 'Update a group calendar event', [EVENT_ID_PARAM]);
@@ -249,13 +263,16 @@ Note: only inject the specific keys Task 1 reported MISSING; the `|| {}` / `|| g
 - [ ] **Step 4: Wire it into the generator**
 
 In `bin/modules/simplified-openapi.mjs`, add the import at the top alongside the Excel one:
+
 ```javascript
 import { augmentGroupCalendarPaths } from './group-augmentations.mjs';
 ```
+
 And call it right after `augmentExcelPaths(openApiSpec);` inside `createAndSaveSimplifiedOpenAPI`:
+
 ```javascript
-  augmentExcelPaths(openApiSpec);
-  augmentGroupCalendarPaths(openApiSpec);
+augmentExcelPaths(openApiSpec);
+augmentGroupCalendarPaths(openApiSpec);
 ```
 
 - [ ] **Step 5: Run the test to verify it passes**
@@ -278,16 +295,19 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 2: Add the nine group endpoints to endpoints.json and regenerate
 
 **Files:**
+
 - Modify: `src/endpoints.json` (add nine entries)
 - Test: `test/group-calendar-tools.test.ts` (create)
 
 **Interfaces:**
+
 - Consumes: the generator pipeline (Task 1 confirmed it works; Task 1b augmentation if it was needed).
 - Produces: nine registered tools — `list-my-groups`, `list-groups`, `get-group`, `list-group-calendar-events`, `get-group-calendar-view`, `get-group-calendar-event`, `create-group-calendar-event`, `update-group-calendar-event`, `delete-group-calendar-event` — and the derived scopes `Group.Read.All`, `Group.ReadWrite.All` in org mode.
 
 - [ ] **Step 1: Write the failing test**
 
 Create `test/group-calendar-tools.test.ts`:
+
 ```typescript
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
@@ -318,7 +338,12 @@ describe('group calendar endpoints.json entries', () => {
     ['list-groups', 'get', '/groups', 'Group.Read.All'],
     ['get-group', 'get', '/groups/{group-id}', 'Group.Read.All'],
     ['list-group-calendar-events', 'get', '/groups/{group-id}/calendar/events', 'Group.Read.All'],
-    ['get-group-calendar-view', 'get', '/groups/{group-id}/calendar/calendarView', 'Group.Read.All'],
+    [
+      'get-group-calendar-view',
+      'get',
+      '/groups/{group-id}/calendar/calendarView',
+      'Group.Read.All',
+    ],
     [
       'get-group-calendar-event',
       'get',
@@ -379,6 +404,7 @@ Expected: FAIL — endpoints not found / scopes missing.
 - [ ] **Step 3: Add the nine entries to `src/endpoints.json`**
 
 Insert this block just before the closing `]` of the array (append as the last entries; JSON array order does not matter):
+
 ```json
 ,
   {
@@ -454,9 +480,11 @@ Insert this block just before the closing `]` of the array (append as the last e
 - [ ] **Step 4: Regenerate the client and build**
 
 Run:
+
 ```bash
 npm run generate && npm run build
 ```
+
 Expected: both succeed. If `generate` throws "Path ... not found in OpenAPI spec" for a group calendar path, Task 1b (augmentation) was required and skipped — go do it, then re-run.
 
 - [ ] **Step 5: Run the config test to verify it passes**
@@ -467,9 +495,11 @@ Expected: PASS (all 9 parametrized cases + scope derivation).
 - [ ] **Step 6: Confirm the tools actually generated into the client**
 
 Run:
+
 ```bash
 grep -c "create-group-calendar-event\|list-groups\|get-group-calendar-view" src/generated/client.ts
 ```
+
 Expected: a count `>= 3` (client.ts is git-ignored; this just confirms generation worked).
 
 - [ ] **Step 7: Commit (endpoints.json only — client.ts is git-ignored)**
@@ -491,9 +521,11 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 3: Unit-test org-mode gating for a workScopes-only tool
 
 **Files:**
+
 - Modify: `src/__tests__/graph-tools.test.ts` (add a `describe` block)
 
 **Interfaces:**
+
 - Consumes: `registerGraphTools(server, graphClient, readOnly, enabledToolsPattern, orgMode)` — the 5th positional arg is `orgMode`.
 - Produces: regression coverage guaranteeing group tools (workScopes-only) are hidden unless org mode is on.
 
@@ -502,51 +534,52 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 - [ ] **Step 1: Add the failing/guard test**
 
 Append this `describe` block inside the top-level `describe('graph-tools', ...)` in `src/__tests__/graph-tools.test.ts` (place it just before the final closing `});` of that block):
+
 ```typescript
-  // ---- 11. org-mode gating for workScopes-only tools ----
-  describe('org-mode gating', () => {
-    function groupToolEndpointAndConfig() {
-      const endpoint = makeEndpoint({
-        alias: 'list-groups',
-        method: 'get',
-        path: '/groups',
-        parameters: [],
-      });
-      // workScopes ONLY (no `scopes`) — this is what makes it org-mode gated.
-      const config = makeConfig({
-        toolName: 'list-groups',
-        pathPattern: '/groups',
-        scopes: undefined,
-        workScopes: ['Group.Read.All'],
-      });
-      return { endpoint, config };
-    }
-
-    it('is skipped when orgMode is false (default)', async () => {
-      const { endpoint, config } = groupToolEndpointAndConfig();
-      mockEndpoints.push(endpoint);
-      mockEndpointsJson = [config];
-
-      const server = createMockServer();
-      const { registerGraphTools } = await loadModule();
-      // args: (server, graphClient, readOnly=false, enabledToolsPattern=undefined, orgMode=false)
-      registerGraphTools(server as any, createMockGraphClient() as any, false, undefined, false);
-
-      expect(server.tools.has('list-groups')).toBe(false);
+// ---- 11. org-mode gating for workScopes-only tools ----
+describe('org-mode gating', () => {
+  function groupToolEndpointAndConfig() {
+    const endpoint = makeEndpoint({
+      alias: 'list-groups',
+      method: 'get',
+      path: '/groups',
+      parameters: [],
     });
-
-    it('is registered when orgMode is true', async () => {
-      const { endpoint, config } = groupToolEndpointAndConfig();
-      mockEndpoints.push(endpoint);
-      mockEndpointsJson = [config];
-
-      const server = createMockServer();
-      const { registerGraphTools } = await loadModule();
-      registerGraphTools(server as any, createMockGraphClient() as any, false, undefined, true);
-
-      expect(server.tools.has('list-groups')).toBe(true);
+    // workScopes ONLY (no `scopes`) — this is what makes it org-mode gated.
+    const config = makeConfig({
+      toolName: 'list-groups',
+      pathPattern: '/groups',
+      scopes: undefined,
+      workScopes: ['Group.Read.All'],
     });
+    return { endpoint, config };
+  }
+
+  it('is skipped when orgMode is false (default)', async () => {
+    const { endpoint, config } = groupToolEndpointAndConfig();
+    mockEndpoints.push(endpoint);
+    mockEndpointsJson = [config];
+
+    const server = createMockServer();
+    const { registerGraphTools } = await loadModule();
+    // args: (server, graphClient, readOnly=false, enabledToolsPattern=undefined, orgMode=false)
+    registerGraphTools(server as any, createMockGraphClient() as any, false, undefined, false);
+
+    expect(server.tools.has('list-groups')).toBe(false);
   });
+
+  it('is registered when orgMode is true', async () => {
+    const { endpoint, config } = groupToolEndpointAndConfig();
+    mockEndpoints.push(endpoint);
+    mockEndpointsJson = [config];
+
+    const server = createMockServer();
+    const { registerGraphTools } = await loadModule();
+    registerGraphTools(server as any, createMockGraphClient() as any, false, undefined, true);
+
+    expect(server.tools.has('list-groups')).toBe(true);
+  });
+});
 ```
 
 - [ ] **Step 2: Run the new block**
@@ -574,16 +607,19 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 ### Task 4: Documentation and enabling org mode for the local server
 
 **Files:**
+
 - Modify: `README.md` (add a group-calendar subsection)
 - Modify: `start-mcp.sh` (pass `--org-mode` so the group tools are actually available at runtime)
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: user-facing docs + a runtime that surfaces the new tools.
 
 - [ ] **Step 1: Add a README subsection**
 
 Find the calendar-related section in `README.md` (search for "calendar" or the tools table). Add this subsection near it:
+
 ```markdown
 ### Group calendars (org mode)
 
@@ -596,6 +632,7 @@ personal calendars and require **org mode**. Tools:
 - `create-group-calendar-event`, `update-group-calendar-event`, `delete-group-calendar-event`
 
 **Setup:**
+
 1. Grant the app the delegated scopes `Group.Read.All` and `Group.ReadWrite.All`
    (admin consent required) on your Entra ID app registration.
 2. Run the server in org mode (`--org-mode`, or set `MS365_MCP_ORG_MODE=true`).
@@ -608,13 +645,17 @@ in org mode.
 - [ ] **Step 2: Enable org mode in the launch wrapper**
 
 In `start-mcp.sh`, change the final `exec` line from:
+
 ```bash
 exec "$SERVER_DIR/node_modules/.bin/tsx" "$SERVER_DIR/src/index.ts" "$@" 2>> "$LOG"
 ```
+
 to:
+
 ```bash
 exec "$SERVER_DIR/node_modules/.bin/tsx" "$SERVER_DIR/src/index.ts" --org-mode "$@" 2>> "$LOG"
 ```
+
 (This surfaces all org-mode/work-account tools — Teams, SharePoint, and now group calendars. Intended, since group calendar is a work-account feature.)
 
 - [ ] **Step 3: Verify formatting**
@@ -638,6 +679,7 @@ Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
 **Files:** none (verification only).
 
 **Interfaces:**
+
 - Consumes: everything above.
 - Produces: a green `npm run verify` and a manually-confirmed group-calendar write.
 
@@ -650,9 +692,11 @@ Expected: `generate` → `lint` → `format:check` → `build` → `test` all pa
 - [ ] **Step 2: Re-authenticate with the new scopes**
 
 After confirming a Global Admin has admin-consented `Group.Read.All` + `Group.ReadWrite.All` on the app registration, run the server login in org mode. For the local wrapper this is now automatic; for a manual run:
+
 ```bash
 npm run dev -- --org-mode --login
 ```
+
 Then complete device-code login. Expected log line: `Granted scopes:` includes `Group.Read.All` and `Group.ReadWrite.All`.
 
 - [ ] **Step 3: Manual smoke test (via MCP client / inspector)**
@@ -672,6 +716,7 @@ Use the `superpowers:finishing-a-development-branch` skill to decide merge/PR. D
 ## Self-Review
 
 **Spec coverage:**
+
 - Discovery (find Aleaquo id) → Task 2 (`list-my-groups`, `list-groups`, `get-group`). ✓
 - Group calendar read (list/view/get) → Task 2. ✓
 - Group calendar write (create/update/delete) → Task 2. ✓

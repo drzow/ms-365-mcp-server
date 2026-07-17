@@ -95,16 +95,16 @@ A `403` on create means step 1 or 3 was not completed; the create tool's
 All entries use `workScopes` (org-mode gated). `supportsTimezone: true` on the
 event tools mirrors the existing personal-calendar tools.
 
-| Tool name | Method | Path | workScopes |
-|---|---|---|---|
-| `list-my-groups` | GET | `/me/memberOf` | `Group.Read.All` |
-| `list-groups` | GET | `/groups` | `Group.Read.All` |
-| `get-group` | GET | `/groups/{group-id}` | `Group.Read.All` |
-| `list-group-calendar-events` | GET | `/groups/{group-id}/calendar/events` | `Group.Read.All` |
-| `get-group-calendar-view` | GET | `/groups/{group-id}/calendar/calendarView` | `Group.Read.All` |
-| `get-group-calendar-event` | GET | `/groups/{group-id}/calendar/events/{event-id}` | `Group.Read.All` |
-| `create-group-calendar-event` | POST | `/groups/{group-id}/calendar/events` | `Group.ReadWrite.All` |
-| `update-group-calendar-event` | PATCH | `/groups/{group-id}/calendar/events/{event-id}` | `Group.ReadWrite.All` |
+| Tool name                     | Method | Path                                            | workScopes            |
+| ----------------------------- | ------ | ----------------------------------------------- | --------------------- |
+| `list-my-groups`              | GET    | `/me/memberOf`                                  | `Group.Read.All`      |
+| `list-groups`                 | GET    | `/groups`                                       | `Group.Read.All`      |
+| `get-group`                   | GET    | `/groups/{group-id}`                            | `Group.Read.All`      |
+| `list-group-calendar-events`  | GET    | `/groups/{group-id}/calendar/events`            | `Group.Read.All`      |
+| `get-group-calendar-view`     | GET    | `/groups/{group-id}/calendar/calendarView`      | `Group.Read.All`      |
+| `get-group-calendar-event`    | GET    | `/groups/{group-id}/calendar/events/{event-id}` | `Group.Read.All`      |
+| `create-group-calendar-event` | POST   | `/groups/{group-id}/calendar/events`            | `Group.ReadWrite.All` |
+| `update-group-calendar-event` | PATCH  | `/groups/{group-id}/calendar/events/{event-id}` | `Group.ReadWrite.All` |
 | `delete-group-calendar-event` | DELETE | `/groups/{group-id}/calendar/events/{event-id}` | `Group.ReadWrite.All` |
 
 Derived scope set: **`Group.Read.All`, `Group.ReadWrite.All`**.
