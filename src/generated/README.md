@@ -32,6 +32,36 @@ We eventually settled on a combined approach:
 - **Type safety** - Full TypeScript types generated from the OpenAPI spec
 - **Validation** - Zod schemas for request/response validation
 
+## Request Body Trimming
+
+Microsoft's metadata describes every write endpoint's request body with the _entire_ entity,
+navigation properties included. Those nav props are read-only expansions — Graph ignores them on
+POST/PATCH — but each one drags its whole sub-entity graph into the generated Zod schema, and from
+there into every `tools/list` payload the client pays for. `create-sharepoint-list` alone was 22k
+tokens, ~19k of it fields the API cannot accept. Across the server they were 44% of the tool-list
+budget.
+
+So the generator drops properties marked `x-ms-navigationProperty: true` from **request bodies
+only**. Responses keep theirs, since expanding them on read is exactly what they're for. The
+filtered body is inlined at the path rather than mutating the shared component, which the
+corresponding GET responses still reference.
+
+A few nav properties genuinely are settable on write — a list's `columns`, a chat's required
+`members`, a listItem's `fields`, a draft's `attachments`. Name those per-endpoint in
+`src/endpoints.json` and they survive the pass:
+
+```json
+{
+  "pathPattern": "/sites/{site-id}/lists",
+  "method": "post",
+  "toolName": "create-sharepoint-list",
+  "bodyNavProps": ["columns"]
+}
+```
+
+A `bodyNavProps` entry naming an unknown tool fails the build. `test/request-body-nav-props.test.ts`
+asserts the pass against the checked-in trimmed spec.
+
 ### Current Limitations & Future Improvements
 
 While this approach is a significant improvement, it's not perfect. The MCP server might still struggle to understand

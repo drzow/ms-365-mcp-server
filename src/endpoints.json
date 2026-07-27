@@ -104,7 +104,8 @@
     "pathPattern": "/me/messages",
     "method": "post",
     "toolName": "create-draft-email",
-    "scopes": ["Mail.ReadWrite"]
+    "scopes": ["Mail.ReadWrite"],
+    "bodyNavProps": ["attachments"]
   },
   {
     "pathPattern": "/me/messages/{message-id}",
@@ -124,7 +125,8 @@
     "pathPattern": "/me/messages/{message-id}",
     "method": "patch",
     "toolName": "update-mail-message",
-    "scopes": ["Mail.ReadWrite"]
+    "scopes": ["Mail.ReadWrite"],
+    "bodyNavProps": ["attachments"]
   },
   {
     "pathPattern": "/me/messages/{message-id}/attachments",
@@ -252,14 +254,16 @@
     "method": "post",
     "toolName": "create-calendar-event",
     "scopes": ["Calendars.ReadWrite"],
-    "llmTip": "CRITICAL: Do not try to guess the email address of the recipients. Use the list-users tool to find the email address of the recipients."
+    "llmTip": "CRITICAL: Do not try to guess the email address of the recipients. Use the list-users tool to find the email address of the recipients.",
+    "bodyNavProps": ["attachments", "singleValueExtendedProperties"]
   },
   {
     "pathPattern": "/me/events/{event-id}",
     "method": "patch",
     "toolName": "update-calendar-event",
     "scopes": ["Calendars.ReadWrite"],
-    "llmTip": "CRITICAL: Do not try to guess the email address of the recipients. Use the list-users tool to find the email address of the recipients. WARNING: Setting attendees replaces the entire attendee list — include all attendees, not just new ones."
+    "llmTip": "CRITICAL: Do not try to guess the email address of the recipients. Use the list-users tool to find the email address of the recipients. WARNING: Setting attendees replaces the entire attendee list — include all attendees, not just new ones.",
+    "bodyNavProps": ["attachments", "singleValueExtendedProperties"]
   },
   {
     "pathPattern": "/me/events/{event-id}",
@@ -290,14 +294,16 @@
     "method": "post",
     "toolName": "create-specific-calendar-event",
     "scopes": ["Calendars.ReadWrite"],
-    "llmTip": "CRITICAL: Do not try to guess the email address of the recipients. Use the list-users tool to find the email address of the recipients."
+    "llmTip": "CRITICAL: Do not try to guess the email address of the recipients. Use the list-users tool to find the email address of the recipients.",
+    "bodyNavProps": ["attachments", "singleValueExtendedProperties"]
   },
   {
     "pathPattern": "/me/calendars/{calendar-id}/events/{event-id}",
     "method": "patch",
     "toolName": "update-specific-calendar-event",
     "scopes": ["Calendars.ReadWrite"],
-    "llmTip": "CRITICAL: Do not try to guess the email address of the recipients. Use the list-users tool to find the email address of the recipients. WARNING: Setting attendees replaces the entire attendee list — include all attendees, not just new ones."
+    "llmTip": "CRITICAL: Do not try to guess the email address of the recipients. Use the list-users tool to find the email address of the recipients. WARNING: Setting attendees replaces the entire attendee list — include all attendees, not just new ones.",
+    "bodyNavProps": ["attachments", "singleValueExtendedProperties"]
   },
   {
     "pathPattern": "/me/calendars/{calendar-id}/events/{event-id}",
@@ -674,13 +680,15 @@
     "pathPattern": "/me/todo/lists/{todoTaskList-id}/tasks",
     "method": "post",
     "toolName": "create-todo-task",
-    "scopes": ["Tasks.ReadWrite"]
+    "scopes": ["Tasks.ReadWrite"],
+    "bodyNavProps": ["checklistItems", "linkedResources"]
   },
   {
     "pathPattern": "/me/todo/lists/{todoTaskList-id}/tasks/{todoTask-id}",
     "method": "patch",
     "toolName": "update-todo-task",
-    "scopes": ["Tasks.ReadWrite"]
+    "scopes": ["Tasks.ReadWrite"],
+    "bodyNavProps": ["checklistItems", "linkedResources"]
   },
   {
     "pathPattern": "/me/todo/lists/{todoTaskList-id}/tasks/{todoTask-id}",
@@ -809,7 +817,8 @@
     "method": "post",
     "toolName": "send-chat-message",
     "workScopes": ["ChatMessage.Send"],
-    "llmTip": "Use contentType 'html' in the body — plain text contentType gets mangled by Graph API."
+    "llmTip": "Use contentType 'html' in the body — plain text contentType gets mangled by Graph API.",
+    "bodyNavProps": ["hostedContents"]
   },
   {
     "pathPattern": "/me/joinedTeams",
@@ -823,6 +832,7 @@
     "toolName": "get-team",
     "workScopes": ["Team.ReadBasic.All"]
   },
+
   {
     "pathPattern": "/teams/{team-id}/channels",
     "method": "get",
@@ -852,14 +862,16 @@
     "method": "post",
     "toolName": "send-channel-message",
     "workScopes": ["ChannelMessage.Send"],
-    "llmTip": "Use contentType 'html' in the body — plain text contentType gets mangled by Graph API."
+    "llmTip": "Use contentType 'html' in the body — plain text contentType gets mangled by Graph API.",
+    "bodyNavProps": ["hostedContents"]
   },
   {
     "pathPattern": "/teams/{team-id}/channels/{channel-id}/messages/{chatMessage-id}/replies",
     "method": "post",
     "toolName": "reply-to-channel-message",
     "workScopes": ["ChannelMessage.Send"],
-    "llmTip": "Use contentType 'html' in the body — plain text contentType gets mangled by Graph API."
+    "llmTip": "Use contentType 'html' in the body — plain text contentType gets mangled by Graph API.",
+    "bodyNavProps": ["hostedContents"]
   },
   {
     "pathPattern": "/teams/{team-id}/channels/{channel-id}/messages/{chatMessage-id}/replies",
@@ -884,7 +896,8 @@
     "method": "post",
     "toolName": "reply-to-chat-message",
     "workScopes": ["ChatMessage.Send"],
-    "llmTip": "Use contentType 'html' in the body — plain text contentType gets mangled by Graph API."
+    "llmTip": "Use contentType 'html' in the body — plain text contentType gets mangled by Graph API.",
+    "bodyNavProps": ["hostedContents"]
   },
   {
     "pathPattern": "/sites",
@@ -967,6 +980,7 @@
     "scopes": ["Mail.Read", "Calendars.Read", "Files.Read.All", "People.Read"],
     "workScopes": ["Sites.Read.All", "Chat.Read", "ChannelMessage.Read.All"]
   },
+
   {
     "pathPattern": "/me/onlineMeetings",
     "method": "get",
@@ -975,6 +989,7 @@
     "workScopes": ["OnlineMeetings.Read"],
     "llmTip": "List online meetings. Use $filter=joinWebUrl eq '{url}' to find a specific meeting by its Teams join link. Returns meeting IDs needed for transcript access."
   },
+
   {
     "pathPattern": "/me/onlineMeetings/{onlineMeeting-id}/transcripts",
     "method": "get",
@@ -983,6 +998,7 @@
     "workScopes": ["OnlineMeetingTranscript.Read.All"],
     "llmTip": "Lists available transcripts for a meeting. Get the meeting ID first via list-online-meetings."
   },
+
   {
     "pathPattern": "/me/onlineMeetings/{onlineMeeting-id}/transcripts/{callTranscript-id}/content",
     "method": "get",
@@ -992,6 +1008,7 @@
     "acceptType": "text/vtt",
     "llmTip": "Returns the transcript content in WebVTT format with speaker identification and timestamps."
   },
+
   {
     "pathPattern": "/me/onlineMeetings/{onlineMeeting-id}/recordings",
     "method": "get",
@@ -999,6 +1016,7 @@
     "workScopes": ["OnlineMeetingRecording.Read.All"],
     "llmTip": "Lists recordings for a meeting. Each recording has createdDateTime, endDateTime, meetingOrganizer, contentCorrelationId (links to corresponding transcript). For recurring meetings, there is one recording per occurrence."
   },
+
   {
     "pathPattern": "/me/onlineMeetings/{onlineMeeting-id}/recordings/{callRecording-id}/content",
     "method": "get",
@@ -1007,6 +1025,7 @@
     "returnDownloadUrl": true,
     "llmTip": "Returns a temporary download URL for the meeting recording in MP4 format. Use the download URL to access the video file. The recording may be large — do not attempt to stream it inline."
   },
+
   {
     "pathPattern": "/me/onlineMeetings/{onlineMeeting-id}/attendanceReports",
     "method": "get",
@@ -1014,6 +1033,7 @@
     "workScopes": ["OnlineMeetingArtifact.Read.All"],
     "llmTip": "Lists attendance reports for a meeting. Each report has meetingStartDateTime, meetingEndDateTime, totalParticipantCount. For recurring meetings, there is one report per occurrence. Get the meeting ID first via list-online-meetings."
   },
+
   {
     "pathPattern": "/me/onlineMeetings/{onlineMeeting-id}/attendanceReports/{meetingAttendanceReport-id}",
     "method": "get",
@@ -1021,6 +1041,7 @@
     "workScopes": ["OnlineMeetingArtifact.Read.All"],
     "llmTip": "Gets a specific attendance report with totalParticipantCount, meetingStartDateTime, meetingEndDateTime."
   },
+
   {
     "pathPattern": "/me/onlineMeetings/{onlineMeeting-id}/attendanceReports/{meetingAttendanceReport-id}/attendanceRecords",
     "method": "get",
@@ -1211,6 +1232,7 @@
     "scopes": ["OnlineMeetings.ReadWrite"],
     "llmTip": "Create an online meeting. Body: {subject: '...', startDateTime: '...', endDateTime: '...'}. Returns joinWebUrl for participants."
   },
+
   {
     "pathPattern": "/me/onlineMeetings/{onlineMeeting-id}",
     "method": "get",
@@ -1223,7 +1245,8 @@
     "method": "post",
     "toolName": "create-team-channel",
     "workScopes": ["Channel.Create"],
-    "llmTip": "Create a channel in a team. Body: {displayName: '...', description: '...', membershipType: 'standard'|'private'|'shared'}."
+    "llmTip": "Create a channel in a team. Body: {displayName: '...', description: '...', membershipType: 'standard'|'private'|'shared'}.",
+    "bodyNavProps": ["members"]
   },
   {
     "pathPattern": "/teams/{team-id}/channels/{channel-id}",
@@ -1303,7 +1326,8 @@
     "method": "post",
     "toolName": "create-chat",
     "workScopes": ["Chat.Create"],
-    "llmTip": "Create a new chat. Body: {chatType: 'oneOnOne'|'group', members: [{@odata.type: '#microsoft.graph.aadUserConversationMember', roles: ['owner'], 'user@odata.bind': 'https://graph.microsoft.com/v1.0/users/{user-id}'}]}."
+    "llmTip": "Create a new chat. Body: {chatType: 'oneOnOne'|'group', members: [{@odata.type: '#microsoft.graph.aadUserConversationMember', roles: ['owner'], 'user@odata.bind': 'https://graph.microsoft.com/v1.0/users/{user-id}'}]}.",
+    "bodyNavProps": ["members"]
   },
   {
     "pathPattern": "/chats/{chat-id}/members",
@@ -1399,13 +1423,15 @@
     "method": "post",
     "toolName": "create-sharepoint-list-item",
     "workScopes": ["Sites.ReadWrite.All"],
-    "llmTip": "Create a list item. Body: {fields: {Title: '...', FieldName: 'value'}}. Use list-sharepoint-list-columns to discover available field names."
+    "llmTip": "Create a list item. Body: {fields: {Title: '...', FieldName: 'value'}}. Use list-sharepoint-list-columns to discover available field names.",
+    "bodyNavProps": ["fields"]
   },
   {
     "pathPattern": "/sites/{site-id}/lists/{list-id}/items/{listItem-id}",
     "method": "patch",
     "toolName": "update-sharepoint-list-item",
-    "workScopes": ["Sites.ReadWrite.All"]
+    "workScopes": ["Sites.ReadWrite.All"],
+    "bodyNavProps": ["fields"]
   },
   {
     "pathPattern": "/sites/{site-id}/lists/{list-id}/items/{listItem-id}",
@@ -1418,7 +1444,8 @@
     "method": "post",
     "toolName": "create-sharepoint-list",
     "workScopes": ["Sites.ReadWrite.All"],
-    "llmTip": "Create a new SharePoint list. Body: {displayName: '...', list: {template: 'genericList'}}."
+    "llmTip": "Create a new SharePoint list. Body: {displayName: '...', list: {template: 'genericList'}}.",
+    "bodyNavProps": ["columns"]
   },
   {
     "pathPattern": "/me/followedSites",
@@ -1511,7 +1538,8 @@
     "toolName": "create-group-calendar-event",
     "workScopes": ["Group.ReadWrite.All"],
     "supportsTimezone": true,
-    "llmTip": "Creates an event owned by the group mailbox (survives individual accounts). Get group-id from list-groups. Body example: {\"subject\":\"...\",\"start\":{\"dateTime\":\"2026-07-10T15:00:00\",\"timeZone\":\"America/New_York\"},\"end\":{\"dateTime\":\"2026-07-10T16:00:00\",\"timeZone\":\"America/New_York\"},\"body\":{\"contentType\":\"HTML\",\"content\":\"...\"},\"location\":{\"displayName\":\"...\"},\"attendees\":[{\"emailAddress\":{\"address\":\"a@b.com\",\"name\":\"A\"},\"type\":\"required\"}]}. Requires org mode and Group.ReadWrite.All admin consent — a 403 means that consent or org mode is missing."
+    "llmTip": "Creates an event owned by the group mailbox (survives individual accounts). Get group-id from list-groups. Body example: {\"subject\":\"...\",\"start\":{\"dateTime\":\"2026-07-10T15:00:00\",\"timeZone\":\"America/New_York\"},\"end\":{\"dateTime\":\"2026-07-10T16:00:00\",\"timeZone\":\"America/New_York\"},\"body\":{\"contentType\":\"HTML\",\"content\":\"...\"},\"location\":{\"displayName\":\"...\"},\"attendees\":[{\"emailAddress\":{\"address\":\"a@b.com\",\"name\":\"A\"},\"type\":\"required\"}]}. Requires org mode and Group.ReadWrite.All admin consent — a 403 means that consent or org mode is missing.",
+    "bodyNavProps": ["attachments", "singleValueExtendedProperties"]
   },
   {
     "pathPattern": "/groups/{group-id}/calendar/events/{event-id}",
@@ -1519,7 +1547,8 @@
     "toolName": "update-group-calendar-event",
     "workScopes": ["Group.ReadWrite.All"],
     "supportsTimezone": true,
-    "llmTip": "Updates fields on an existing group calendar event. Send only the fields to change. Get ids from list-group-calendar-events."
+    "llmTip": "Updates fields on an existing group calendar event. Send only the fields to change. Get ids from list-group-calendar-events.",
+    "bodyNavProps": ["attachments", "singleValueExtendedProperties"]
   },
   {
     "pathPattern": "/groups/{group-id}/calendar/events/{event-id}",

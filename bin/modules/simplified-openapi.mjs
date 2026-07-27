@@ -60,6 +60,9 @@ export function createAndSaveSimplifiedOpenAPI(endpointsFile, openapiFile, opena
     simplifyAnyOfInPaths(openApiSpec.paths);
   }
 
+  console.log('✂️  Stripping navigation properties from request bodies...');
+  stripNavigationPropertiesFromRequestBodies(openApiSpec, endpoints);
+
   console.log('🧹 Pruning unused schemas...');
   const usedSchemas = findUsedSchemas(openApiSpec);
   pruneUnusedSchemas(openApiSpec, usedSchemas);
@@ -416,6 +419,75 @@ function simplifyNestedPropertiesRecursively(properties, currentDepth = 0, maxDe
   });
 }
 
+/**
+ * Microsoft's Graph metadata describes each write endpoint's request body with the *entire*
+ * entity, navigation properties included. Those nav props (a list's `drive` and `items`, a
+ * channel's `filesFolder`, a listItem's `analytics`) are read-only expansions — Graph ignores
+ * them on POST/PATCH — but they drag their whole sub-entity graph into the generated zod
+ * schema, and from there into every tools/list payload the client pays for. They accounted for
+ * ~44% of this server's tool-list tokens.
+ *
+ * So: drop `x-ms-navigationProperty: true` properties from request bodies only. Responses are
+ * untouched, since expanding those nav props on read is exactly what they're for.
+ *
+ * A handful of nav props *are* genuinely settable on write (a list's `columns`, a chat's
+ * required `members`, a listItem's `fields`). Those are named per-endpoint in endpoints.json
+ * via `bodyNavProps`, and preserved.
+ */
+function stripNavigationPropertiesFromRequestBodies(openApiSpec, endpoints) {
+  const schemas = openApiSpec.components?.schemas || {};
+  const keepByTool = new Map(
+    endpoints
+      .filter((e) => e.bodyNavProps?.length)
+      .map((e) => [e.toolName, new Set(e.bodyNavProps)])
+  );
+  const seenTools = new Set();
+
+  for (const pathItem of Object.values(openApiSpec.paths || {})) {
+    for (const operation of Object.values(pathItem || {})) {
+      if (!operation || typeof operation !== 'object' || !operation.operationId) continue;
+      seenTools.add(operation.operationId);
+
+      const content = operation.requestBody?.content?.['application/json'];
+      const ref = content?.schema?.$ref;
+      if (!ref) continue;
+
+      const entity = schemas[ref.replace('#/components/schemas/', '')];
+      if (!entity?.properties) continue;
+
+      const keep = keepByTool.get(operation.operationId) ?? new Set();
+      const dropped = Object.entries(entity.properties)
+        .filter(([name, prop]) => prop?.['x-ms-navigationProperty'] === true && !keep.has(name))
+        .map(([name]) => name);
+      if (dropped.length === 0) continue;
+
+      // Inline a filtered copy rather than mutating the shared component — the same entity
+      // is referenced by GET responses, which must keep their nav properties.
+      const properties = Object.fromEntries(
+        Object.entries(entity.properties).filter(([name]) => !dropped.includes(name))
+      );
+      const filtered = { type: 'object', properties };
+      if (entity.required) {
+        const required = entity.required.filter((name) => name in properties);
+        if (required.length > 0) filtered.required = required;
+      }
+      content.schema = filtered;
+
+      console.log(
+        `   ${operation.operationId}: dropped ${dropped.length} nav ${
+          dropped.length === 1 ? 'property' : 'properties'
+        }${keep.size > 0 ? ` (kept ${[...keep].join(', ')})` : ''}`
+      );
+    }
+  }
+
+  for (const [toolName] of keepByTool) {
+    if (!seenTools.has(toolName)) {
+      throw new Error(`bodyNavProps declared for unknown tool "${toolName}" in endpoints.json`);
+    }
+  }
+}
+
 function findUsedSchemas(openApiSpec) {
   const usedSchemas = new Set();
   const schemasToProcess = [];
@@ -456,12 +528,13 @@ function findUsedSchemas(openApiSpec) {
             const schemaName = content.schema.$ref.replace('#/components/schemas/', '');
             schemasToProcess.push(schemaName);
           }
-          if (content.schema?.properties?.requests?.items?.$ref) {
-            const schemaName = content.schema.properties.requests.items.$ref.replace(
-              '#/components/schemas/',
-              ''
-            );
-            schemasToProcess.push(schemaName);
+          // Inlined request-body schemas (see stripNavigationPropertiesFromRequestBodies)
+          // still reference components from their surviving properties — collect those too,
+          // or pruning would delete schemas the body depends on.
+          if (content.schema?.properties) {
+            findRefsInObject(content.schema.properties, (ref) => {
+              schemasToProcess.push(ref.replace('#/components/schemas/', ''));
+            });
           }
         });
       }
