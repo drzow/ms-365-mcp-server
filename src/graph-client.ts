@@ -34,6 +34,29 @@ interface McpResponse {
   [key: string]: unknown;
 }
 
+/**
+ * Strip OData annotations from a response payload, except the two collection-level
+ * annotations a caller needs to tell a complete result from a truncated one:
+ * `@odata.nextLink` (the page we did not fetch) and `@odata.count`. They are preserved
+ * on the collection root only — item-level `@odata.*` stays stripped as before.
+ */
+const PRESERVED_COLLECTION_ANNOTATIONS = ['@odata.nextLink', '@odata.count'];
+
+function removeODataProps(obj: Record<string, unknown>, isCollectionRoot = false): void {
+  if (typeof obj === 'object' && obj !== null) {
+    Object.keys(obj).forEach((key) => {
+      if (key.startsWith('@odata.')) {
+        if (isCollectionRoot && PRESERVED_COLLECTION_ANNOTATIONS.includes(key)) {
+          return;
+        }
+        delete obj[key];
+      } else if (typeof obj[key] === 'object') {
+        removeODataProps(obj[key] as Record<string, unknown>);
+      }
+    });
+  }
+}
+
 class GraphClient {
   private authManager: AuthManager;
   private secrets: AppSecrets;
@@ -244,20 +267,8 @@ class GraphClient {
         };
       }
 
-      // Remove OData properties
-      const removeODataProps = (obj: Record<string, unknown>): void => {
-        if (typeof obj === 'object' && obj !== null) {
-          Object.keys(obj).forEach((key) => {
-            if (key.startsWith('@odata.')) {
-              delete obj[key];
-            } else if (typeof obj[key] === 'object') {
-              removeODataProps(obj[key] as Record<string, unknown>);
-            }
-          });
-        }
-      };
-
-      removeODataProps(responseData.data as Record<string, unknown>);
+      // Remove OData properties, keeping the pagination annotations on the collection
+      removeODataProps(responseData.data as Record<string, unknown>, true);
 
       return {
         content: [
@@ -280,20 +291,8 @@ class GraphClient {
       };
     }
 
-    // Remove OData properties
-    const removeODataProps = (obj: Record<string, unknown>): void => {
-      if (typeof obj === 'object' && obj !== null) {
-        Object.keys(obj).forEach((key) => {
-          if (key.startsWith('@odata.')) {
-            delete obj[key];
-          } else if (typeof obj[key] === 'object') {
-            removeODataProps(obj[key] as Record<string, unknown>);
-          }
-        });
-      }
-    };
-
-    removeODataProps(data as Record<string, unknown>);
+    // Remove OData properties, keeping the pagination annotations on the collection
+    removeODataProps(data as Record<string, unknown>, true);
 
     return {
       content: [{ type: 'text', text: this.serializeData(data, this.outputFormat, true) }],
