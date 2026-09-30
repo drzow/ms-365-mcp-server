@@ -211,8 +211,58 @@ describe('graph-tools', () => {
       const parsed = JSON.parse(result.content[0].text);
       expect(parsed.value).toHaveLength(3);
       expect(parsed.value.map((v: any) => v.id)).toEqual(['1', '2', '3']);
-      // nextLink should be removed from final response
-      expect(parsed['@odata.nextLink']).toBeUndefined();
+      // Contract (owner ruling on Communication #10, Q5 (b)): the tool never strips
+      // @odata.nextLink — the key is present exactly when pages remain unfetched.
+      // The last page reported no nextLink, so the collection is exhausted and no
+      // stale page-1 link may leak; the page-cap test below pins the other half.
+      expect(parsed).not.toHaveProperty('@odata.nextLink');
+    });
+
+    it('carries the nextLink query string into the follow-up request', async () => {
+      const endpoint = makeEndpoint();
+      const config = makeConfig();
+      mockEndpoints.push(endpoint);
+      mockEndpointsJson = [config];
+
+      // Graph pages mail folders with $skiptoken, which only exists in the nextLink
+      // query string — dropping it makes page 2 return page 1 again.
+      const graphClient = createMockGraphClient([
+        {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({
+                value: [{ id: '1' }],
+                '@odata.nextLink':
+                  'https://graph.microsoft.com/v1.0/me/mailFolders?$skiptoken=Skk%3D&$top=1&$select=displayName',
+              }),
+            },
+          ],
+        },
+        {
+          content: [{ type: 'text', text: JSON.stringify({ value: [{ id: '2' }] }) }],
+        },
+      ]);
+
+      const server = createMockServer();
+      const { registerGraphTools } = await loadModule();
+      registerGraphTools(server as any, graphClient as any);
+
+      const tool = server.tools.get('test-tool');
+      const result = await tool!.handler({ fetchAllPages: true });
+
+      expect(graphClient.graphRequest).toHaveBeenCalledTimes(2);
+      const [firstPath, secondPath] = graphClient.graphRequest.mock.calls.map(
+        (call: any[]) => call[0]
+      );
+      expect(firstPath).toContain('/me/messages');
+      expect(secondPath).toContain('/me/mailFolders');
+      expect(secondPath).toContain('$skiptoken=Skk%3D');
+      expect(secondPath).toContain('$top=1');
+      expect(secondPath).toContain('$select=displayName');
+
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.value.map((v: any) => v.id)).toEqual(['1', '2']);
     });
 
     it('should stop at 100 page limit', async () => {
@@ -243,10 +293,19 @@ describe('graph-tools', () => {
       registerGraphTools(server as any, graphClient as any);
 
       const tool = server.tools.get('test-tool');
-      await tool!.handler({ fetchAllPages: true });
+      const result = await tool!.handler({ fetchAllPages: true });
 
       // 1 initial + 99 pagination = 100 total requests (stops at pageCount=100)
       expect(graphClient.graphRequest).toHaveBeenCalledTimes(100);
+
+      // Truncation must be detectable from inside the response: the loop stopped
+      // because of the cap, not because the collection ran out, so the link to the
+      // page it never fetched is the one the last page handed back.
+      const parsed = JSON.parse(result.content[0].text);
+      expect(parsed.value).toHaveLength(100);
+      expect(parsed['@odata.nextLink']).toBe(
+        'https://graph.microsoft.com/v1.0/me/messages?$skip=100'
+      );
     });
   });
 

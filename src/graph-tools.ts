@@ -298,7 +298,6 @@ async function executeGraphTool(
       rawResponse?: boolean;
       includeHeaders?: boolean;
       excludeResponse?: boolean;
-      queryParams?: Record<string, string>;
       accessToken?: string;
     } = {
       method: tool.method.toUpperCase(),
@@ -366,15 +365,13 @@ async function executeGraphTool(
         while (nextLink && pageCount < 100) {
           logger.info(`Fetching page ${pageCount + 1} from: ${nextLink}`);
 
+          // GraphClient takes the query string on the path (as built above) and has no
+          // queryParams option, so the nextLink query must be carried verbatim:
+          // Graph's $skiptoken — the only thing that makes page 2 differ from page 1 —
+          // exists nowhere else.
           const url = new URL(nextLink);
-          const nextPath = url.pathname.replace('/v1.0', '');
+          const nextPath = `${url.pathname.replace('/v1.0', '')}${url.search}`;
           const nextOptions = { ...options };
-
-          const nextQueryParams: Record<string, string> = {};
-          for (const [key, value] of url.searchParams.entries()) {
-            nextQueryParams[key] = value;
-          }
-          nextOptions.queryParams = nextQueryParams;
 
           const nextResponse = await graphClient.graphRequest(nextPath, nextOptions);
           if (nextResponse?.content?.[0]?.text) {
@@ -397,7 +394,15 @@ async function executeGraphTool(
         if (combinedResponse['@odata.count']) {
           combinedResponse['@odata.count'] = allItems.length;
         }
-        delete combinedResponse['@odata.nextLink'];
+        // Keep the pagination annotation, pointing at the page we did NOT fetch: it is
+        // absent exactly when the collection was walked to the end, and present when the
+        // 100-page cap stopped the walk, so truncation is detectable from inside the
+        // response instead of looking like a complete result.
+        if (nextLink) {
+          combinedResponse['@odata.nextLink'] = nextLink;
+        } else {
+          delete combinedResponse['@odata.nextLink'];
+        }
 
         response.content[0].text = JSON.stringify(combinedResponse);
 
